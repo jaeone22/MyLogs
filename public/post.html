@@ -158,7 +158,6 @@
                 background-color: rgba(255, 255, 255, 0.1);
             }
 
-
             /* 글 영역 스타일 */
             #page {
                 background-color: rgba(40, 40, 40, 0.7);
@@ -296,7 +295,8 @@
                 gap: 15px;
                 outline: 2px solid #1e90ff;
             }
-            .reply-form input[type="text"], .reply-form input[type="email"] {
+            .reply-form input[type="text"],
+            .reply-form input[type="email"] {
                 all: unset;
                 background: #2a2a2a;
                 color: #eee;
@@ -348,17 +348,34 @@
             }
 
             /* 마크다운 스타일 */
-            #body h1, #body h2, #body h3, #body h4, #body h5, #body h6 {
+            #body h1,
+            #body h2,
+            #body h3,
+            #body h4,
+            #body h5,
+            #body h6 {
                 margin: 0.5em 0 0.5em 0;
                 font-weight: bold;
             }
 
-            #body h1 { font-size: 1.8em; }
-            #body h2 { font-size: 1.6em; }
-            #body h3 { font-size: 1.4em; }
-            #body h4 { font-size: 1.2em; }
-            #body h5 { font-size: 1.1em; }
-            #body h6 { font-size: 1em; }
+            #body h1 {
+                font-size: 1.8em;
+            }
+            #body h2 {
+                font-size: 1.6em;
+            }
+            #body h3 {
+                font-size: 1.4em;
+            }
+            #body h4 {
+                font-size: 1.2em;
+            }
+            #body h5 {
+                font-size: 1.1em;
+            }
+            #body h6 {
+                font-size: 1em;
+            }
 
             #body p {
                 margin: 1em 0;
@@ -405,7 +422,8 @@
                 color: #ccc;
             }
 
-            #body ul, #body ol {
+            #body ul,
+            #body ol {
                 margin: 1em 0;
                 padding-left: 2em;
             }
@@ -432,7 +450,8 @@
                 margin: 1em 0;
             }
 
-            #body th, #body td {
+            #body th,
+            #body td {
                 padding: 8px 12px;
                 border-bottom: 1px solid #444;
             }
@@ -470,14 +489,36 @@
                     <form id="comment-form" autocomplete="off">
                         <h3>{{ML_TRANS_COMMENT_TITLE}}</h3>
                         <div class="comment-form-row">
-                            <textarea name="text" class="comment-textarea" placeholder="{{ML_TRANS_COMMENT_TEXT}}" required></textarea>
+                            <textarea
+                                name="text"
+                                class="comment-textarea"
+                                placeholder="{{ML_TRANS_COMMENT_TEXT}}"
+                                required
+                            ></textarea>
                         </div>
-                        <div class="comment-form-row" style="gap: 10px;">
-                            <input type="text" name="name" class="comment-input" placeholder="{{ML_TRANS_COMMENT_NAME}}" required />
-                            <input type="email" name="email" class="comment-input" placeholder="{{ML_TRANS_COMMENT_EMAIL}}" />
-                            <button type="submit" class="comment-submit">{{ML_TRANS_COMMENT_SUBMIT}}</button>
+                        <div class="comment-form-row" style="gap: 10px">
+                            <input
+                                type="text"
+                                name="name"
+                                class="comment-input"
+                                placeholder="{{ML_TRANS_COMMENT_NAME}}"
+                                required
+                            />
+                            <input
+                                type="email"
+                                name="email"
+                                class="comment-input"
+                                placeholder="{{ML_TRANS_COMMENT_EMAIL}}"
+                            />
+                            <button type="submit" class="comment-submit">
+                                {{ML_TRANS_COMMENT_SUBMIT}}
+                            </button>
                         </div>
-                        <input type="hidden" name="postId" value="{{ML_DATA_ID}}" />
+                        <input
+                            type="hidden"
+                            name="postId"
+                            value="{{ML_DATA_ID}}"
+                        />
                         <input type="hidden" name="date" value="" />
                         <input type="hidden" name="parentId" value="" />
                     </form>
@@ -526,8 +567,12 @@
             // 대댓글(답글) 폼 동적 생성 및 제출 처리
             function addReplyForm(parentId, parentName) {
                 // 이미 열려있는 답글 폼이 있으면 제거
-                document.querySelectorAll(".reply-form").forEach((e) => e.remove());
-                const parentEl = document.getElementById(`comment-card-${parentId}`);
+                document
+                    .querySelectorAll(".reply-form")
+                    .forEach((e) => e.remove());
+                const parentEl = document.getElementById(
+                    `comment-card-${parentId}`
+                );
                 if (!parentEl) return;
                 const form = document.createElement("form");
                 form.className = "reply-form";
@@ -566,21 +611,25 @@
                         alert("Error occurred while posting reply.");
                     }
                 };
-                parentEl.insertAdjacentElement('afterend', form);
+                parentEl.insertAdjacentElement("afterend", form);
                 form.querySelector('input[name="name"]').focus();
             }
             window.addReplyForm = addReplyForm;
 
             // 댓글 목록에 Reply 버튼 동적 추가 제거, 대신 이벤트 위임 방식으로 reply 폼만 띄움
             window.addEventListener("DOMContentLoaded", () => {
-                document.getElementById("comments-container")?.addEventListener("click", function(e) {
-                    const btn = e.target.closest(".reply-btn");
-                    if (btn) {
-                        const parentId = btn.getAttribute("data-reply-id");
-                        const name = btn.getAttribute("data-reply-name") || "Anonymous";
-                        addReplyForm(parentId, name);
-                    }
-                });
+                document
+                    .getElementById("comments-container")
+                    ?.addEventListener("click", function (e) {
+                        const btn = e.target.closest(".reply-btn");
+                        if (btn) {
+                            const parentId = btn.getAttribute("data-reply-id");
+                            const name =
+                                btn.getAttribute("data-reply-name") ||
+                                "Anonymous";
+                            addReplyForm(parentId, name);
+                        }
+                    });
             });
         </script>
     </body>

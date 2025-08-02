@@ -292,8 +292,8 @@ app.get("/post", (req, res) => {
     const body =
         bodyStart >= 0
             ? marked(raw.slice(bodyStart + 15).trim(), {
-                breaks: true,  // 줄바꿈을 <br>로 변환
-                gfm: true      // GitHub Flavored Markdown 지원
+                  breaks: true, // 줄바꿈을 <br>로 변환
+                  gfm: true, // GitHub Flavored Markdown 지원
               })
             : "";
 
@@ -538,7 +538,7 @@ app.use((req, res, next) => {
 // 서버 실행
 const PORT = 3000;
 app.listen(PORT, () => {
-	console.log();
+    console.log();
     console.log(`==== MyLogs v0.1 ====`);
     console.log(`View more on https://github.com/jaeone22/MyLogs`);
     console.log(`Server running at http://localhost:${PORT}`);
