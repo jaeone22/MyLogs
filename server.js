@@ -4,6 +4,7 @@ const app = express();
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const { marked } = require("marked");
 
 // 상수 정의
 const POSTS_DIR = path.join(__dirname, "posts");
@@ -290,12 +291,7 @@ app.get("/post", (req, res) => {
     const bodyStart = raw.indexOf("</ml-metadata>");
     const body =
         bodyStart >= 0
-            ? raw
-                  .slice(bodyStart + 15)
-                  .trim()
-                  .split(/(?<=\.)\s+|\n+/)
-                  .map((line) => `<p>${line.trim()}</p>`)
-                  .join("\n")
+            ? marked(raw.slice(bodyStart + 15).trim())
             : "";
 
     let html = wrapWithLayout(path.join(PUBLIC_DIR, "post.html"), "", id);
@@ -435,7 +431,7 @@ app.get("/api/user/post/get", (req, res) => {
 // 새 글 작성
 app.post("/api/admin/post/new", (req, res) => {
     const token = req.body.token;
-    if (!verifyAdminToken(token, process.env.admin_password || PASSWORD))
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD"))
         return res.status(401).end();
 
     const title = req.body.title?.trim();
@@ -465,7 +461,7 @@ app.post("/api/admin/post/new", (req, res) => {
 // 글 수정
 app.post("/api/admin/post/edit/:id", (req, res) => {
     const token = req.body.token;
-    if (!verifyAdminToken(token, process.env.admin_password || PASSWORD))
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD"))
         return res.status(401).end();
 
     const id = req.params.id;
@@ -498,7 +494,7 @@ app.post("/api/admin/post/edit/:id", (req, res) => {
 // 글 삭제
 app.post("/api/admin/post/delete/:id", (req, res) => {
     const token = req.body.token;
-    if (!verifyAdminToken(token, process.env.admin_password || PASSWORD))
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD"))
         return res.status(401).end();
 
     const id = req.params.id;
@@ -515,7 +511,7 @@ app.post("/api/admin/post/delete/:id", (req, res) => {
 // 토큰 확인
 app.post("/api/admin/verify", (req, res) => {
     const token = req.body?.token;
-    if (!verifyAdminToken(token, process.env.admin_password || PASSWORD))
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD"))
         return res.status(401).end();
     res.json({ ok: true });
 });
