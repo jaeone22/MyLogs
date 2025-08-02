@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-ko">
+<head>
+	<meta charset="UTF-8">
+	<title>{{ML_BLOG_NAME}}</title>
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+        html, body {
+            height: 100%;
+        }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            height: 100%;
+        }
+        #page-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+		header {
+			top: 0;
+			bottom: auto;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			background-color: rgba(40, 40, 40, 0.7);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+			color: white;
+			padding: 10px 20px;
+			position: fixed;
+			width: 100%;
+			left: 0;
+			z-index: 10;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+			overflow: hidden;
+		}
+		footer {
+			display: block;
+			width: 100%;
+			text-align: center;
+			background-color: #1f1f1f;
+			color: white;
+			padding: 10px;
+			border: none;
+		}
+        main {
+            padding: 20px 20px 60px;
+            margin-top: 50px;
+            margin-bottom: 40px;
+            flex: 1;
+        }
+		.post-card {
+			background-color: #1e1e1e;
+			color: #e0e0e0;
+			border-radius: 25px;
+			padding: 20px;
+			margin-bottom: 15px;
+			cursor: pointer;
+			border: none;
+			transition: background-color 0.2s, transform 0.2s, opacity 0.3s;
+			opacity: 0;
+			transform: translateY(5px);
+            border: 1px solid #2a2a2a;
+		}
+		.post-card.visible {
+			opacity: 1;
+			transform: translateY(0);
+		}
+		.post-card:hover {
+			background-color: #333333;
+		}
+		#category-filter {
+			border-radius: 25px;
+			padding: 5px 10px;
+			font-size: 16px;
+			background-color: #2a2a2a;
+			color: white;
+			border: none;
+			max-width: 40vw;
+			cursor: pointer;
+			transition: background-color 0.2s, color 0.2s;
+		}
+		#category-filter:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+		#logo {
+			font-weight: bold;
+			text-decoration: none;
+			color: inherit;
+			padding: 6px 12px;
+			border-radius: 25px;
+			transition: background-color 0.2s;
+			cursor: pointer;
+		}
+		#logo:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+		#post-list a {
+			display: block;
+			color: inherit;
+			text-decoration: none;
+		}
+	</style>
+</head>
+<body>
+	<div id="page-container">
+		<header style="display: flex; justify-content: space-between; align-items: center;">
+			<a href="/" id="logo">{{ML_BLOG_NAME}}</a>
+			<div id="category-wrapper">
+				<select id="category-filter" onchange="location.href=this.value">
+					{{ML_DATA_CATEGORY}}
+				</select>
+			</div>
+		</header>
+
+		<main>
+			<div id="post-list">
+				{{ML_DATA_LIST}}
+			</div>
+		</main>
+
+		<footer></footer>
+	</div>
+</body>
+</html>
