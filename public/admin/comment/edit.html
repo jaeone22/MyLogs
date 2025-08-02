@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="{{ML_TRANS_LANG}}">
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ML_BLOG_NAME}} - Admin</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                height: 100%;
+            }
+
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+                height: 100%;
+                transition: background-color 0.3s ease;
+            }
+
+            .layout-container {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+                max-width: 900px;
+                margin: 0 auto;
+                width: 100%;
+            }
+
+            header {
+                top: 0;
+                bottom: auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: rgba(40, 40, 40, 0.7);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                color: white;
+                padding: 10px 20px;
+                position: fixed;
+                width: 100%;
+                left: 0;
+                z-index: 10;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                overflow: hidden;
+            }
+
+            footer {
+                width: 100%;
+                max-width: 900px;
+                margin: 0 auto;
+                text-align: center;
+                color: white;
+                padding: 10px;
+                border: none;
+                transition: opacity 0.5s ease;
+            }
+
+            main {
+                padding: 60px 0px 80px;
+                margin-top: 60px;
+                margin-bottom: 40px;
+                flex: 1;
+                font-size: 1.2rem;
+                line-height: 1.75;
+                word-spacing: 0.05em;
+            }
+            #logo {
+                font-weight: bold;
+                text-decoration: none;
+                color: inherit;
+                padding: 6px 12px;
+                border-radius: 25px;
+                transition: background-color 0.2s;
+                cursor: pointer;
+            }
+            #logo:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="layout-container">
+            <header>
+                <div style="display: flex; align-items: center; gap: 4px">
+                    <a href="/" id="logo">{{ML_BLOG_NAME}}</a>
+                    <a href="/admin" id="logo" style="color: dodgerblue">Admin</a>
+                </div>
+            </header>
+
+            <main>
+                <div
+                    style="
+                        background-color: rgba(40, 40, 40, 0.7);
+                        padding: 30px;
+                        border-radius: 25px;
+                        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+                    "
+                >
+                    <textarea
+                        id="content"
+                        placeholder="Comment content..."
+                        style="
+                            all: unset;
+                            display: block;
+                            font-size: 1.2rem;
+                            line-height: 1.75;
+                            width: 100%;
+                            resize: vertical;
+                            min-height: 150px;
+                        "
+                    ></textarea>
+                </div>
+            </main>
+        </div>
+
+        <footer></footer>
+
+        <script>
+            let adminPassword = "";
+            let id = new URLSearchParams(location.search).get("id");
+
+            async function sha512(text) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest("SHA-512", data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray
+                    .map((b) => b.toString(16).padStart(2, "0"))
+                    .join("");
+            }
+
+            async function init() {
+                adminPassword = prompt("🔐 MyLogs Admin Password");
+                if (!adminPassword) {
+                    alert("❌ Authenticate Failure");
+                    history.back();
+                    return;
+                }
+
+                const now = Math.floor(Date.now() / 1000);
+                const token = await sha512(adminPassword + (now - 1));
+
+                const res = await fetch("/api/admin/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token }),
+                });
+                if (!res.ok) {
+                    alert("❌ Authenticate Failure");
+                    history.back();
+                    return;
+                }
+
+                loadComment();
+                insertButtons();
+            }
+
+            async function loadComment() {
+                const now = Math.floor(Date.now() / 1000);
+                const token = await sha512(adminPassword + (now - 1));
+                const res = await fetch("/api/admin/comment/get?id=" + id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token })
+                })
+                if (!res.ok) {
+                    document.body.innerHTML =
+                        "<h2 style='color:crimson;'>Failed to load comment.</h2>";
+                    return;
+                }
+                const comment = await res.json();
+                document.getElementById("content").value = comment.content;
+            }
+
+            async function submitEdit() {
+                const content = document.getElementById("content").value.trim();
+
+                if (!content) {
+                    alert("Please fill content field.");
+                    return;
+                }
+
+                const now = Math.floor(Date.now() / 1000);
+                const token = await sha512(adminPassword + now);
+
+                const payload = {
+                    content,
+                    token,
+                };
+
+                const res = await fetch("/api/admin/comment/edit/" + id, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                if (res.ok) {
+                    alert("Comment updated!");
+                    location.href = "/admin/comment/list.html";
+                } else {
+                    alert("Failed to update comment.");
+                }
+            }
+
+            function insertButtons() {
+                const buttonContainer = document.createElement("div");
+                buttonContainer.style.cssText =
+                    "margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;";
+
+                const saveButton = document.createElement("button");
+                saveButton.textContent = "Save";
+                saveButton.style.cssText =
+                    "padding: 8px 16px; font-weight: bold; border-radius: 25px; background-color: dodgerblue; color: white; border: none; cursor: pointer;";
+                saveButton.onclick = submitEdit;
+                buttonContainer.appendChild(saveButton);
+
+                const main = document.querySelector("main");
+                main.appendChild(buttonContainer);
+            }
+
+            init();
+        </script>
+    </body>
+</html>

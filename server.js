@@ -369,9 +369,17 @@ app.get("/admin/post", (req, res) => {
     sendUserHtml(res, "admin/post/list.html");
 });
 
+app.get("/admin/comment/list", (req, res) => {
+    sendUserHtml(res, "admin/comment/list.html");
+});
+
 // 글 수정 페이지
 app.get("/admin/post/edit", (req, res) => {
     sendUserHtml(res, "admin/post/edit.html");
+});
+
+app.get("/admin/comment/edit", (req, res) => {
+    sendUserHtml(res, "admin/comment/edit.html");
 });
 
 // 새 글 작성 페이지
@@ -519,6 +527,188 @@ app.post("/api/admin/post/delete/:id", (req, res) => {
         fs.renameSync(chatFile, trashedChatPath);
     }
     res.json({ ok: true });
+});
+
+// ===== Comment Admin APIs =====
+
+// 댓글 목록 조회
+app.post("/api/admin/comment/list", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD")) {
+        return res.status(401).end();
+    }
+
+    const allComments = [];
+    const chatFiles = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+
+    for (const file of chatFiles) {
+        const postId = file.replace('.json', '');
+        const postFilePath = path.join(POSTS_DIR, `${postId}.mlmark`);
+        let postTitle = 'Unknown Post';
+        try {
+            if (fs.existsSync(postFilePath)) {
+                const postContent = fs.readFileSync(postFilePath, 'utf-8');
+                const titleMatch = postContent.match(/<ml-title>(.*?)<\/ml-title>/);
+                if (titleMatch && titleMatch[1]) {
+                    postTitle = titleMatch[1];
+                }
+            }
+        } catch (e) {
+            // 게시글 파일을 읽지 못해도 오류 무시
+        }
+
+        const chatFile = path.join(CHAT_DIR, file);
+        try {
+            const comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            for (const comment of comments) {
+                allComments.push({
+                    id: comment.id,
+                    postId: postId,
+                    postTitle: postTitle,
+                    author: comment.name,
+                    content: comment.text,
+                    cdate: comment.date
+                });
+            }
+        } catch (e) {
+            // 댓글 파일 파싱 오류 무시
+        }
+    }
+    res.json(allComments.sort((a,b) => parseInt(b.cdate.replace(/\D/g,'')) - parseInt(a.cdate.replace(/\D/g,''))));
+});
+
+// 단일 댓글 조회
+app.post("/api/admin/comment/get", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD")) {
+        return res.status(401).end();
+    }
+    const id = req.query.id;
+    if (!id) return res.status(400).end();
+
+    const files = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+        const chatFile = path.join(CHAT_DIR, file);
+        try {
+            const comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            const found = comments.find(c => c.id === id);
+            if (found) {
+                return res.json({
+                    id: found.id,
+                    content: found.text,
+                    author: found.name,
+                    cdate: found.date,
+                    postId: file.replace('.json', '')
+                });
+            }
+        } catch (e) {
+            // Ignore
+        }
+    }
+
+    res.status(404).json({ error: 'Comment not found' });
+});
+
+// 댓글 수정
+app.post("/api/admin/comment/edit/:id", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD")) {
+        return res.status(401).end();
+    }
+    const id = req.params.id;
+    const { content } = req.body;
+    if (!id || !content) return res.status(400).end();
+
+    const files = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+        const chatFile = path.join(CHAT_DIR, file);
+        try {
+            let comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            const commentIndex = comments.findIndex(c => c.id === id);
+            if (commentIndex !== -1) {
+                comments[commentIndex].text = content;
+                fs.writeFileSync(chatFile, JSON.stringify(comments, null, 2), 'utf-8');
+                return res.json({ ok: true });
+            }
+        } catch (e) {
+            //
+        }
+    }
+    res.status(404).json({ error: 'Comment not found' });
+});
+
+// 댓글 삭제
+app.post("/api/admin/comment/delete/:id", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD")) {
+        return res.status(401).end();
+    }
+    const id = req.params.id;
+    if (!id) return res.status(400).end();
+
+    const files = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+        const chatFile = path.join(CHAT_DIR, file);
+        try {
+            let comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            const initialLength = comments.length;
+            comments = comments.filter(c => c.id !== id);
+            if (comments.length < initialLength) {
+                fs.writeFileSync(chatFile, JSON.stringify(comments, null, 2), 'utf-8');
+                return res.json({ ok: true });
+            }
+        } catch (e) {
+            //
+        }
+    }
+    res.status(404).json({ error: 'Comment not found' });
+});
+
+// 최근 댓글 조회 (관리자용)
+app.post("/api/admin/comment/recent", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD")) {
+        return res.status(401).end();
+    }
+
+    const allComments = [];
+    const chatFiles = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+
+    for (const file of chatFiles) {
+        const postId = file.replace('.json', '');
+        const postFilePath = path.join(POSTS_DIR, `${postId}.mlmark`);
+        let postTitle = 'Unknown Post';
+        try {
+            if (fs.existsSync(postFilePath)) {
+                const postContent = fs.readFileSync(postFilePath, 'utf-8');
+                const titleMatch = postContent.match(/<ml-title>(.*?)<\/ml-title>/);
+                if (titleMatch && titleMatch[1]) {
+                    postTitle = titleMatch[1];
+                }
+            }
+        } catch (e) { /* 무시 */ }
+
+        const chatFile = path.join(CHAT_DIR, file);
+        try {
+            const comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            for (const comment of comments) {
+                allComments.push({
+                    id: comment.id,
+                    postId: postId,
+                    postTitle: postTitle,
+                    author: comment.name,
+                    content: comment.text,
+                    cdate: comment.date
+                });
+            }
+        } catch (e) { /* 무시 */ }
+    }
+    
+    const recentComments = allComments
+        .sort((a, b) => new Date(b.cdate) - new Date(a.cdate))
+        .slice(0, 10);
+    
+    res.json(recentComments);
 });
 
 // 토큰 확인
