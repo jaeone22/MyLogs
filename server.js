@@ -27,7 +27,7 @@ app.use(express.static(PUBLIC_DIR, { index: false }));
 function verifyAdminToken(token, password) {
     if (!token || typeof token !== "string") return false;
     const now = Math.floor(Date.now() / 1000);
-    for (let offset = -1; offset <= 3; offset++) {
+    for (let offset = -5; offset <= 5; offset++) {
         const compare = now + offset;
         const expected = crypto
             .createHash("sha512")
