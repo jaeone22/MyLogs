@@ -11,9 +11,12 @@ const POSTS_DIR = path.join(__dirname, "posts");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const CHAT_DIR = path.join(__dirname, "comments");
 const TRASH_DIR = path.join(POSTS_DIR, "trash");
+const CHAT_TRASH_DIR = path.join(CHAT_DIR, "trash");
 
 // trash 폴더가 없으면 생성
 if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR);
+if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR);
+if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -508,6 +511,13 @@ app.post("/api/admin/post/delete/:id", (req, res) => {
 
     const trashedPath = path.join(TRASH_DIR, `${id}.mlmark`);
     fs.renameSync(file, trashedPath);
+
+    // 댓글 파일도 휴지통으로 이동
+    const chatFile = path.join(CHAT_DIR, `${id}.json`);
+    if (fs.existsSync(chatFile)) {
+        const trashedChatPath = path.join(CHAT_TRASH_DIR, `${id}.json`);
+        fs.renameSync(chatFile, trashedChatPath);
+    }
     res.json({ ok: true });
 });
 
