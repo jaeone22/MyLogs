@@ -291,7 +291,10 @@ app.get("/post", (req, res) => {
     const bodyStart = raw.indexOf("</ml-metadata>");
     const body =
         bodyStart >= 0
-            ? marked(raw.slice(bodyStart + 15).trim())
+            ? marked(raw.slice(bodyStart + 15).trim(), {
+                breaks: true,  // 줄바꿈을 <br>로 변환
+                gfm: true      // GitHub Flavored Markdown 지원
+              })
             : "";
 
     let html = wrapWithLayout(path.join(PUBLIC_DIR, "post.html"), "", id);

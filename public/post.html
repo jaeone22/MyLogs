@@ -158,32 +158,6 @@
                 background-color: rgba(255, 255, 255, 0.1);
             }
 
-            /* 페이지 강조 모드일 때 */
-            body.hovering header,
-            body.hovering footer {
-                opacity: 0.1;
-            }
-            body.hovering {
-                background-color: #0a0a0a;
-                cursor: none;
-            }
-            @media (pointer: fine) {
-                body.hovering {
-                    cursor: none;
-                }
-            }
-
-            /* 가상 커서 스타일 */
-            #fake-cursor {
-                position: fixed;
-                width: 18px;
-                height: 18px;
-                border-radius: 50%;
-                background-color: rgba(255, 255, 255, 0.3);
-                pointer-events: none;
-                transform: translate(-50%, -50%);
-                z-index: 9999;
-            }
 
             /* 글 영역 스타일 */
             #page {
@@ -217,35 +191,16 @@
                 margin-bottom: 20px;
             }
             #body {
-                white-space: pre-wrap;
                 font-size: 1.2rem;
                 line-height: 1.75;
                 padding-top: 10px;
             }
-            #body p {
-                margin-top: 0px;
-                margin-bottom: 0px;
-                transition: all 0.2s ease;
-            }
-            #body p:hover {
-                background-color: rgba(255, 255, 155, 0.05);
-                border-radius: 10px;
-                padding: 5px 10px;
-                margin: -5px -10px;
-                transform: scale(1.02);
-            }
+
             @media (max-width: 768px) {
-                #body p:hover {
-                    background-color: transparent;
-                    padding: 0;
-                    margin: 0;
-                    transform: none;
-                }
                 .comment-form-row {
                     flex-direction: column;
                     gap: 8px;
                 }
-                /* 대댓글 등록버튼(comment-submit)이 포함된 줄만 가로로 */
                 .reply-form .comment-submit {
                     align-self: unset;
                 }
@@ -260,7 +215,6 @@
                 padding-top: 0;
             }
 
-            /* reply 버튼 및 reply-form 스타일 개선 */
             .reply-btn {
                 background: none;
                 color: dodgerblue;
@@ -392,6 +346,108 @@
             .reply-form textarea:focus {
                 box-shadow: 0 0 0 2px dodgerblue;
             }
+
+            /* 마크다운 스타일 */
+            #body h1, #body h2, #body h3, #body h4, #body h5, #body h6 {
+                margin: 0.5em 0 0.5em 0;
+                font-weight: bold;
+            }
+
+            #body h1 { font-size: 1.8em; }
+            #body h2 { font-size: 1.6em; }
+            #body h3 { font-size: 1.4em; }
+            #body h4 { font-size: 1.2em; }
+            #body h5 { font-size: 1.1em; }
+            #body h6 { font-size: 1em; }
+
+            #body p {
+                margin: 1em 0;
+                line-height: 1.6;
+            }
+
+            #body strong {
+                font-weight: bold;
+            }
+
+            #body em {
+                font-style: italic;
+            }
+
+            #body del {
+                text-decoration: line-through;
+            }
+
+            #body code {
+                background-color: #333;
+                color: #a9ff54;
+                padding: 2px 4px;
+                border-radius: 12px;
+                font-family: monospace;
+            }
+
+            #body pre {
+                background-color: #333;
+                padding: 15px;
+                border-radius: 12px;
+                overflow-x: auto;
+                margin: 1em 0;
+            }
+
+            #body pre code {
+                background: none;
+                padding: 0;
+            }
+
+            #body blockquote {
+                border-left: 3px solid #666;
+                margin: 1em 0;
+                padding-left: 15px;
+                color: #ccc;
+            }
+
+            #body ul, #body ol {
+                margin: 1em 0;
+                padding-left: 2em;
+            }
+
+            #body li {
+                margin: 0.3em 0;
+            }
+
+            #body a {
+                color: #1e90ff;
+                text-decoration: underline;
+            }
+
+            #body img {
+                max-width: 100%;
+                height: auto;
+                margin: 0.5em 0;
+                border-radius: 12px;
+            }
+
+            #body table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1em 0;
+            }
+
+            #body th, #body td {
+                padding: 8px 12px;
+                border-bottom: 1px solid #444;
+            }
+
+            #body th {
+                background-color: #333;
+                font-weight: bold;
+            }
+
+            #body hr {
+                border: none;
+                height: 1px;
+                background-color: #666;
+                margin: 1em 0;
+            }
         </style>
     </head>
     <body>
@@ -436,40 +492,6 @@
         <footer></footer>
 
         <script>
-            // 강조 마우스 커서 토글
-            document.addEventListener("DOMContentLoaded", function () {
-                const box = document.querySelector("main > div");
-                box.addEventListener("mouseenter", () => {
-                    document.body.classList.add("hovering");
-                    // 가상 커서 생성
-                    if (!window.fakeCursor) {
-                        const cursor = document.createElement("div");
-                        cursor.id = "fake-cursor";
-                        cursor.style.willChange = "transform";
-                        document.body.appendChild(cursor);
-                        window.fakeCursor = cursor;
-                    }
-                });
-                // 가상 커서 제거
-                box.addEventListener("mouseleave", () => {
-                    document.body.classList.remove("hovering");
-                    if (window.fakeCursor) {
-                        window.fakeCursor.remove();
-                        window.fakeCursor = null;
-                    }
-                });
-            });
-
-            // 강조 마우스 커서 이동
-            document.addEventListener("mousemove", function (e) {
-                if (window.fakeCursor && document.body.classList.contains("hovering")) {
-                    window.requestAnimationFrame(() => {
-                        window.fakeCursor.style.left = `${e.clientX}px`;
-                        window.fakeCursor.style.top = `${e.clientY}px`;
-                    });
-                }
-            });
-
             // 댓글 작성 폼 제출 처리
             const commentForm = document.getElementById("comment-form");
             if (commentForm) {
