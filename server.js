@@ -209,7 +209,7 @@ function wrapWithLayout(htmlFilePath, category = "", overrideId = "") {
             const cdate = metadata.cdate || "";
 
             listHTML += `
-                <a href="/post?id=${id}" class="post-card visible" style="display:block;text-decoration:none;color:inherit;">
+                <a href="/post/${id}" class="post-card visible" style="display:block;text-decoration:none;color:inherit;">
                     <h3>${title}</h3>
                     <p><strong>${replacements["{{ML_TRANS_CATEGORY}}"]}:</strong> ${tag}</p>
                     <p><strong>${replacements["{{ML_TRANS_DATE}}"]}:</strong> ${cdate}</p>
@@ -275,8 +275,8 @@ app.get(["/", "/list"], (req, res) => {
 });
 
 // 단일 글 보기
-app.get("/post", (req, res) => {
-    const id = req.query.id;
+app.get("/post/:id", (req, res) => {
+    const id = req.params.id;
     if (!id || !/^[\w\-]+$/.test(id)) return res.status(400).end();
 
     const filePath = path.join(POSTS_DIR, `${id}.mlmark`);
@@ -311,6 +311,15 @@ app.get("/post", (req, res) => {
     } else {
         res.status(500).end();
     }
+});
+
+// 기존 쿼리 형식 URL을 새로운 형식으로 리다이렉트
+app.get("/post", (req, res) => {
+    const id = req.query.id;
+    if (!id || !/^[\w\-]+$/.test(id)) return res.status(400).end();
+    
+    // 새로운 URL 형식으로 리다이렉트
+    res.redirect(301, `/post/${id}`);
 });
 
 // 댓글 작성 API
