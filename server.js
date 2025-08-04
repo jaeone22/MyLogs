@@ -12,18 +12,21 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const CHAT_DIR = path.join(__dirname, "comments");
 const TRASH_DIR = path.join(POSTS_DIR, "trash");
 const CHAT_TRASH_DIR = path.join(CHAT_DIR, "trash");
+const IMAGES_DIR = path.join(__dirname, "images");
 
 // 필요한 폴더들이 없으면 생성
 if (!fs.existsSync(POSTS_DIR)) fs.mkdirSync(POSTS_DIR, { recursive: true });
 if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR, { recursive: true });
 if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR, { recursive: true });
 if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR, { recursive: true });
+if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
+app.use(express.json({ limit: '500mb' }));
 
 // 정적 파일 제공
 app.use(express.static(PUBLIC_DIR, { index: false }));
+app.use('/images', express.static(IMAGES_DIR));
 
 // ===== 유틸리티 함수들 =====
 
@@ -328,6 +331,52 @@ app.get("/post", (req, res) => {
     
     // 새로운 URL 형식으로 리다이렉트
     res.redirect(301, `/post/${id}`);
+});
+
+// 이미지 업로드 API
+app.post("/api/admin/image/upload", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD"))
+        return res.status(401).json({ error: "Unauthorized" });
+
+    const { image, filename } = req.body;
+    if (!image || !filename) {
+        return res.status(400).json({ error: "Image and filename are required" });
+    }
+
+    try {
+        // Base64 데이터에서 실제 이미지 데이터 추출
+        const base64Data = image.replace(/^data:image\/[a-z]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // 파일 크기 체크 (500MB 제한)
+        if (buffer.length > 500 * 1024 * 1024) {
+            return res.status(400).json({ error: "File size too large (max 500MB)" });
+        }
+        
+        // 파일 확장자 확인
+        const ext = path.extname(filename).toLowerCase();
+        if (!['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+            return res.status(400).json({ error: "Unsupported file type" });
+        }
+        
+        // 고유한 파일명 생성 (타임스탬프 + 랜덤)
+        const uniqueFilename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + ext;
+        const filePath = path.join(IMAGES_DIR, uniqueFilename);
+        
+        // 파일 저장
+        fs.writeFileSync(filePath, buffer);
+        
+        // 성공 응답
+        res.json({
+            success: true,
+            filename: uniqueFilename,
+            url: `/images/${uniqueFilename}`
+        });
+    } catch (error) {
+        console.error('Image upload error:', error);
+        res.status(500).json({ error: "Failed to upload image" });
+    }
 });
 
 // 댓글 작성 API

@@ -167,6 +167,21 @@
 		<div style="background-color: rgba(40, 40, 40, 0.7); padding: 30px; border-radius: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
 			<input id="title" placeholder="Title" autocomplete="off" style="all: unset; display: block; font-size: 2rem; font-weight: bold; margin-bottom: 20px; width: 100%;" />
 			<input id="tag" placeholder="Category" autocomplete="off" style="all: unset; display: block; font-size: 1rem; opacity: 0.7; margin-bottom: 20px; width: 100%;" />
+			
+			<!-- Image Upload Section -->
+			<div style="margin-bottom: 20px; padding: 15px; border: 2px dashed rgba(255,255,255,0.3); border-radius: 15px;">
+				<input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+				<button onclick="document.getElementById('imageInput').click()" style="padding: 8px 16px; border-radius: 20px; background-color: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; margin-right: 10px;">📷 Upload Image</button>
+				<div id="imagePreview" style="margin-top: 15px; display: none;">
+					<img id="previewImg" style="max-width: 200px; max-height: 200px; border-radius: 10px;">
+					<div style="margin-top: 10px;">
+						<button onclick="insertImageToContent()" style="padding: 6px 12px; border-radius: 15px; background-color: green; color: white; border: none; cursor: pointer; margin-right: 10px;">✓ Insert into Text</button>
+						<button onclick="cancelImageUpload()" style="padding: 6px 12px; border-radius: 15px; background-color: crimson; color: white; border: none; cursor: pointer;">✗ Cancel</button>
+					</div>
+				</div>
+				<div id="uploadStatus" style="margin-top: 10px; font-size: 0.9rem; color: #aaa;"></div>
+			</div>
+			
 			<textarea id="content" placeholder="Write the contents with MLmark..." autocomplete="off" style="all: unset; display: block; font-size: 1.2rem; line-height: 1.75; width: 100%; resize: vertical;"></textarea>
 		</div>
 		<div style="text-align: right; margin-top: 20px;">
@@ -245,6 +260,104 @@
             } else {
                 alert('Failed to save post.');
             }
+        }
+
+        let currentImageUrl = '';
+        let currentImageFilename = '';
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // File size check (500MB limit)
+            if (file.size > 500 * 1024 * 1024) {
+                alert('File size is too large. Please select a file under 500MB.');
+                return;
+            }
+
+            // Supported image format check
+            if (!file.type.startsWith('image/')) {
+                alert('Only image files can be uploaded.');
+                return;
+            }
+
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.textContent = 'Uploading image...';
+            statusDiv.style.color = '#ffcc00';
+
+            try {
+                // 파일을 Base64로 변환
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const base64Data = e.target.result;
+                    
+                    // 미리보기 표시
+                    const previewDiv = document.getElementById('imagePreview');
+                    const previewImg = document.getElementById('previewImg');
+                    previewImg.src = base64Data;
+                    previewDiv.style.display = 'block';
+
+                    // 서버로 업로드
+                    const now = Math.floor(Date.now() / 1000);
+                    const token = await sha512(adminPassword + now);
+
+                    const response = await fetch('/api/admin/image/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: base64Data,
+                            filename: file.name,
+                            token: token
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        currentImageUrl = result.url;
+                        currentImageFilename = result.filename;
+                        statusDiv.textContent = 'Upload complete! Click "Insert into Text" button to insert into content.';
+                        statusDiv.style.color = '#00ff88';
+                    } else {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusDiv.textContent = 'Upload failed: ' + error.message;
+                statusDiv.style.color = '#ff4444';
+                cancelImageUpload();
+            }
+        }
+
+        function insertImageToContent() {
+            if (!currentImageUrl) return;
+            
+            const contentTextarea = document.getElementById('content');
+            const cursorPos = contentTextarea.selectionStart;
+            const textBefore = contentTextarea.value.substring(0, cursorPos);
+            const textAfter = contentTextarea.value.substring(cursorPos);
+            
+            const imageMarkdown = `![Image](${currentImageUrl})`;
+            contentTextarea.value = textBefore + imageMarkdown + textAfter;
+            
+            // 커서를 삽입된 텍스트 뒤로 이동
+            const newCursorPos = cursorPos + imageMarkdown.length;
+            contentTextarea.setSelectionRange(newCursorPos, newCursorPos);
+            contentTextarea.focus();
+            
+            cancelImageUpload();
+        }
+
+        function cancelImageUpload() {
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imageInput').value = '';
+            document.getElementById('uploadStatus').textContent = '';
+            currentImageUrl = '';
+            currentImageFilename = '';
         }
 
         init();
