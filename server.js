@@ -294,10 +294,17 @@ app.get("/post/:id", (req, res) => {
     const bodyStart = raw.indexOf("</ml-metadata>");
     const body =
         bodyStart >= 0
-            ? marked(raw.slice(bodyStart + 15).trim(), {
-                  breaks: true, // 줄바꿈을 <br>로 변환
-                  gfm: true, // GitHub Flavored Markdown 지원
-              })
+            ? (() => {
+                marked.use({
+                    tokenizer: {
+                        lheading() {} // Setext-style header 비활성화
+                    }
+                });
+                return marked(raw.slice(bodyStart + 15).trim(), {
+                    breaks: true, // 줄바꿈을 <br>로 변환
+                    gfm: true, // GitHub Flavored Markdown 지원
+                });
+            })()
             : "";
 
     let html = wrapWithLayout(path.join(PUBLIC_DIR, "post.html"), "", id);
@@ -748,7 +755,7 @@ app.use((req, res, next) => {
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log();
-    console.log(`==== MyLogs v0.1 ====`);
+    console.log(`==== MyLogs v0.2 ====`);
     console.log(`View more on https://github.com/jaeone22/MyLogs`);
     console.log(`Server running at http://localhost:${PORT}`);
 });
