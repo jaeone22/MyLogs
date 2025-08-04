@@ -13,10 +13,11 @@ const CHAT_DIR = path.join(__dirname, "comments");
 const TRASH_DIR = path.join(POSTS_DIR, "trash");
 const CHAT_TRASH_DIR = path.join(CHAT_DIR, "trash");
 
-// trash 폴더가 없으면 생성
-if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR);
-if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR);
-if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR);
+// 필요한 폴더들이 없으면 생성
+if (!fs.existsSync(POSTS_DIR)) fs.mkdirSync(POSTS_DIR, { recursive: true });
+if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR, { recursive: true });
+if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR, { recursive: true });
+if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR, { recursive: true });
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
