@@ -31,6 +31,23 @@ app.use('/images', express.static(IMAGES_DIR));
 
 // ===== 유틸리티 함수들 =====
 
+// hCaptcha 활성화 여부 확인
+function isHcaptchaEnabled() {
+    const siteKey = process.env.HCAPTCHA_SITE_KEY;
+    const secretKey = process.env.HCAPTCHA_SECRET_KEY;
+    
+    // 사이트 키나 시크릿 키가 없거나 기본값이거나 빈 값이면 비활성화
+    if (!siteKey || !secretKey ||
+        siteKey === "YOUR_SITE_KEY_(LEAVE_BLANK_IF_NOT_USED)" ||
+        secretKey === "YOUR_SECRET_KEY_(LEAVE_BLANK_IF_NOT_USED)" ||
+        siteKey.trim() === "" ||
+        secretKey.trim() === "") {
+        return false;
+    }
+    
+    return true;
+}
+
 // 토큰 검증
 function verifyAdminToken(token, password) {
     if (!token || typeof token !== "string") return false;
@@ -170,7 +187,7 @@ function wrapWithLayout(htmlFilePath, category = "", overrideId = "") {
             "{{ML_TRANS_REPLY_SUBMIT}}":
                 process.env.ML_TRANS_REPLY_SUBMIT || "Reply",
             "{{HCAPTCHA_SITE_KEY}}": process.env.HCAPTCHA_SITE_KEY || "",
-            "{{HCAPTCHA_ENABLED}}": (process.env.HCAPTCHA_SITE_KEY && process.env.HCAPTCHA_SECRET_KEY) ? "true" : "false",
+            "{{HCAPTCHA_ENABLED}}": isHcaptchaEnabled() ? "true" : "false",
             "{{ML_DATA_LIST}}": "",
             "{{ML_DATA_CATEGORY}}": "",
             "{{ML_DATA_COMMENTS}}": "",
@@ -390,18 +407,14 @@ app.post("/api/user/chat/new", async (req, res) => {
         return res.status(400).json({ error: "Required fields are missing." });
     }
 
-    // hCaptcha 검증 (환경변수가 설정된 경우에만)
-    const hcaptchaSiteKey = process.env.HCAPTCHA_SITE_KEY;
-    const hcaptchaSecret = process.env.HCAPTCHA_SECRET_KEY;
-    
-    if (hcaptchaSiteKey && hcaptchaSecret) {
-        // hCaptcha가 활성화된 경우에만 검증
+    // hCaptcha 검증 (활성화된 경우에만)
+    if (isHcaptchaEnabled()) {
         if (!hcaptchaToken) {
             return res.status(400).json({ error: "hCaptcha verification is required." });
         }
 
         try {
-            const hcaptchaResponse = await verify(hcaptchaSecret, hcaptchaToken);
+            const hcaptchaResponse = await verify(process.env.HCAPTCHA_SECRET_KEY, hcaptchaToken);
             if (!hcaptchaResponse.success) {
                 return res.status(400).json({ error: "hCaptcha verification failed." });
             }
