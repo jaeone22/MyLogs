@@ -6,6 +6,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const { marked } = require("marked");
 const { verify } = require("hcaptcha");
+const xss = require("xss");
 
 // 상수 정의
 const POSTS_DIR = path.join(__dirname, "posts");
@@ -450,9 +451,9 @@ app.post("/api/user/chat/new", async (req, res) => {
     const newComment = {
         id,
         parentId: parentId || null,
-        name,
-        email: email || "",
-        text,
+        name: xss(name),
+        email: xss(email || ""),
+        text: xss(text),
         date,
     };
 
