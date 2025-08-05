@@ -845,4 +845,28 @@ app.listen(PORT, () => {
     console.log(`==== MyLogs v0.2 ====`);
     console.log(`View more on https://github.com/jaeone22/MyLogs`);
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log(
+        `hCaptcha status: ${
+            isHcaptchaEnabled()
+                ? "\x1b[32menabled\x1b[0m"
+                : "\x1b[31mdisabled\x1b[0m"
+        }`
+    );
+    if (
+        !process.env.ADMIN_PASSWORD ||
+        process.env.ADMIN_PASSWORD === "PASSWORD"
+    ) {
+        console.log(
+            "\x1b[33m%s\x1b[0m",
+            "Warning: Default admin password is used. Please change it."
+        );
+    }
+        if (
+        process.env.ADMIN_PASSWORD === "1234"
+    ) {
+        console.log(
+            "\x1b[33m%s\x1b[0m",
+            "Warning: Your admin password is too weak. Please change it."
+        );
+    }
 });
