@@ -148,50 +148,8 @@
             <footer></footer>
         </div>
 
+        <script src="/admin/auth.js"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                adminPassword = prompt("🔐 MyLogs Admin Password");
-                if (!adminPassword) {
-                    alert("❌ Authenticate Failure");
-                    location.href = '/';
-                    return;
-                }
-                init();
-            });
-
-            let adminToken = '';
-
-            // SHA-512 helper
-            async function sha512(text) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(text);
-                const hashBuffer = await crypto.subtle.digest('SHA-512', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-
-            async function verifyToken() {
-                const now = Math.floor(Date.now() / 1000);
-                adminToken = await sha512(adminPassword + (now - 1));
-
-                const res = await fetch('/api/admin/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: adminToken })
-                });
-                return res.ok;
-            }
-
-            async function init() {
-                const ok = await verifyToken();
-                if (!ok) {
-                    alert("❌ Authenticate Failure");
-                    history.back();
-                    return;
-                }
-                loadPosts();
-            }
-
             function loadPosts() {
                 fetch('/api/user/post/list/1000')
                     .then(res => res.json())
@@ -217,7 +175,7 @@
                             }
                             categorySelect.appendChild(option);
                         });
-
+        
                         const postList = document.getElementById('post-list');
                         postList.replaceChildren();
                         posts.filter(post => selected === 'all' || post.tag === selected).forEach(post => {
@@ -280,14 +238,14 @@
                         });
                     });
             }
-
+        
             const categorySelect = document.getElementById('category-filter');
             categorySelect.onchange = loadPosts;
-
+        
             function editPost(id) {
                 location.href = '/admin/post/edit?id=' + id;
             }
-
+        
             function deletePost(id) {
                 if (!confirm("Are you sure you want to delete this post?")) return;
                 fetch('/api/admin/post/delete/' + id, {
@@ -301,8 +259,8 @@
                     else alert("Failed to delete post.");
                 });
             }
-
-            init();
+        
+            document.addEventListener('DOMContentLoaded', () => initializeAdminPage(loadPosts));
         </script>
     </body>
 </html>

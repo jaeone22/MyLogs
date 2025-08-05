@@ -192,68 +192,34 @@
 
 	<footer></footer>
 
+    <script src="/admin/auth.js"></script>
     <script>
-        let adminPassword = '';
-
-        async function sha512(text) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(text);
-            const hashBuffer = await crypto.subtle.digest('SHA-512', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function init() {
-            adminPassword = prompt("🔐 MyLogs Admin Password");
-            if (!adminPassword) {
-                alert("❌ Authenticate Failure");
-                history.back();
-                return;
-            }
-
-            const now = Math.floor(Date.now() / 1000);
-            const token = await sha512(adminPassword + (now - 1));
-
-            const res = await fetch('/api/admin/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
-            });
-            if (!res.ok) {
-                alert("❌ Authenticate Failure");
-                history.back();
-                return;
-            }
-
-            document.getElementById('editorWrapper').style.display = '';
-        }
-
         async function submitPost() {
             const title = document.getElementById('title').value.trim();
             const tag = document.getElementById('tag').value.trim();
             const body = document.getElementById('content').value.trim();
-
+    
             if (!title || !tag || !body) {
                 alert('Please fill all fields.');
                 return;
             }
-
+    
             const now = Math.floor(Date.now() / 1000);
             const token = await sha512(adminPassword + now);
-
+    
             const payload = {
                 title,
                 tag,
                 body,
                 token
             };
-
+    
             const res = await fetch('/api/admin/post/new', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
+    
             if (res.ok) {
                 alert('Post saved!');
                 location.href = '/admin/post';
@@ -261,58 +227,51 @@
                 alert('Failed to save post.');
             }
         }
-
+    
         let currentImageUrl = '';
         let currentImageFilename = '';
-
+    
         async function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            // File size check (500MB limit)
+    
             if (file.size > 500 * 1024 * 1024) {
                 alert('File size is too large. Please select a file under 500MB.');
                 return;
             }
-
-            // Supported image format check
+    
             if (!file.type.startsWith('image/')) {
                 alert('Only image files can be uploaded.');
                 return;
             }
-
+    
             const statusDiv = document.getElementById('uploadStatus');
             statusDiv.textContent = 'Uploading image...';
             statusDiv.style.color = '#ffcc00';
-
+    
             try {
-                // 파일을 Base64로 변환
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     const base64Data = e.target.result;
                     
-                    // 미리보기 표시
                     const previewDiv = document.getElementById('imagePreview');
                     const previewImg = document.getElementById('previewImg');
                     previewImg.src = base64Data;
                     previewDiv.style.display = 'block';
-
-                    // 서버로 업로드
+    
                     const now = Math.floor(Date.now() / 1000);
                     const token = await sha512(adminPassword + now);
-
+    
                     const response = await fetch('/api/admin/image/upload', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             image: base64Data,
                             filename: file.name,
                             token: token
                         })
                     });
-
+    
                     const result = await response.json();
                     
                     if (result.success) {
@@ -332,7 +291,7 @@
                 cancelImageUpload();
             }
         }
-
+    
         function insertImageToContent() {
             if (!currentImageUrl) return;
             
@@ -344,14 +303,13 @@
             const imageMarkdown = `![Image](${currentImageUrl})`;
             contentTextarea.value = textBefore + imageMarkdown + textAfter;
             
-            // 커서를 삽입된 텍스트 뒤로 이동
             const newCursorPos = cursorPos + imageMarkdown.length;
             contentTextarea.setSelectionRange(newCursorPos, newCursorPos);
             contentTextarea.focus();
             
             cancelImageUpload();
         }
-
+    
         function cancelImageUpload() {
             document.getElementById('imagePreview').style.display = 'none';
             document.getElementById('imageInput').value = '';
@@ -359,17 +317,21 @@
             currentImageUrl = '';
             currentImageFilename = '';
         }
-
-        init();
+    
+        document.addEventListener('DOMContentLoaded', () => initializeAdminPage(() => {
+            // 인증 성공 후 별도의 동작이 필요 없으므로 콜백은 비워둡니다.
+        }));
     </script>
 
     <script>
-        // 강조 마우스 커서 토글
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAdminPage(() => {
+                // 인증 성공 후 별도의 동작이 필요 없으므로 콜백은 비워둡니다.
+            });
+            
             const box = document.querySelector('main > div');
             box.addEventListener('mouseenter', () => {
                 document.body.classList.add('hovering');
-                // 가상 커서 생성
                 if (!window.fakeCursor) {
                     const cursor = document.createElement('div');
                     cursor.id = 'fake-cursor';
@@ -378,7 +340,6 @@
                     window.fakeCursor = cursor;
                 }
             });
-            // 가상 커서 제거
             box.addEventListener('mouseleave', () => {
                 document.body.classList.remove('hovering');
                 if (window.fakeCursor) {
@@ -386,17 +347,16 @@
                     window.fakeCursor = null;
                 }
             });
+    
+            document.addEventListener('mousemove', function (e) {
+                if (window.fakeCursor && document.body.classList.contains('hovering')) {
+                    window.requestAnimationFrame(() => {
+                        window.fakeCursor.style.left = `${e.clientX}px`;
+                        window.fakeCursor.style.top = `${e.clientY}px`;
+                    });
+                }
+            });
         });
-
-        // 강조 마우스 커서 이동
-        document.addEventListener('mousemove', function (e) {
-            if (window.fakeCursor && document.body.classList.contains('hovering')) {
-                window.requestAnimationFrame(() => {
-                    window.fakeCursor.style.left = `${e.clientX}px`;
-                    window.fakeCursor.style.top = `${e.clientY}px`;
-                });
-            }
-        });
-	</script>
+    </script>
 </body>
 </html>
