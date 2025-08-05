@@ -173,8 +173,11 @@
                     body: JSON.stringify({ token })
                 })
                 if (!res.ok) {
-                    document.body.innerHTML =
-                        "<h2 style='color:crimson;'>Failed to load comment.</h2>";
+                    document.body.replaceChildren();
+                    const errorElement = document.createElement("h2");
+                    errorElement.style.color = "crimson";
+                    errorElement.textContent = "Failed to load comment.";
+                    document.body.appendChild(errorElement);
                     return;
                 }
                 const comment = await res.json();

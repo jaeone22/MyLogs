@@ -199,28 +199,84 @@
                         const categorySelect = document.getElementById('category-filter');
                         const selected = categorySelect.value;
                         const categories = [...new Set(posts.map(p => p.tag))];
-                        categorySelect.innerHTML = '<option value="all">All Categories</option>' +
-                            categories.map(tag => `<option value="${tag}" ${tag === selected ? 'selected' : ''}>${tag}</option>`).join('');
+                        
+                        // 카테고리 옵션들을 DOM API로 생성
+                        categorySelect.replaceChildren();
+                        
+                        const allOption = document.createElement('option');
+                        allOption.value = 'all';
+                        allOption.textContent = 'All Categories';
+                        categorySelect.appendChild(allOption);
+                        
+                        categories.forEach(tag => {
+                            const option = document.createElement('option');
+                            option.value = tag;
+                            option.textContent = tag;
+                            if (tag === selected) {
+                                option.selected = true;
+                            }
+                            categorySelect.appendChild(option);
+                        });
 
                         const postList = document.getElementById('post-list');
-                        postList.innerHTML = '';
+                        postList.replaceChildren();
                         posts.filter(post => selected === 'all' || post.tag === selected).forEach(post => {
-                            const tr = document.createElement('div');
-                            tr.innerHTML = `
-                                <div class="post-card">
-                                    <div class="info">
-                                        <div><strong>ID:</strong> ${post.slug}</div>
-                                        <div><strong>Title:</strong> ${post.title}</div>
-                                        <div><strong>Category:</strong> ${post.tag}</div>
-                                        <div><strong>Date:</strong> ${post.cdate}</div>
-                                    </div>
-                                    <div class="actions">
-                                        <button class="edit" onclick="editPost('${post.slug}')">Edit</button>
-                                        <button class="delete" onclick="deletePost('${post.slug}')">Delete</button>
-                                    </div>
-                                </div>
-                            `;
-                            postList.appendChild(tr.firstElementChild);
+                            const postCard = document.createElement('div');
+                            postCard.className = 'post-card';
+                            
+                            // Info 섹션 생성
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'info';
+                            
+                            const idDiv = document.createElement('div');
+                            const idStrong = document.createElement('strong');
+                            idStrong.textContent = 'ID:';
+                            idDiv.appendChild(idStrong);
+                            idDiv.append(' ' + post.slug);
+                            
+                            const titleDiv = document.createElement('div');
+                            const titleStrong = document.createElement('strong');
+                            titleStrong.textContent = 'Title:';
+                            titleDiv.appendChild(titleStrong);
+                            titleDiv.append(' ' + post.title);
+                            
+                            const categoryDiv = document.createElement('div');
+                            const categoryStrong = document.createElement('strong');
+                            categoryStrong.textContent = 'Category:';
+                            categoryDiv.appendChild(categoryStrong);
+                            categoryDiv.append(' ' + post.tag);
+                            
+                            const dateDiv = document.createElement('div');
+                            const dateStrong = document.createElement('strong');
+                            dateStrong.textContent = 'Date:';
+                            dateDiv.appendChild(dateStrong);
+                            dateDiv.append(' ' + post.cdate);
+                            
+                            infoDiv.appendChild(idDiv);
+                            infoDiv.appendChild(titleDiv);
+                            infoDiv.appendChild(categoryDiv);
+                            infoDiv.appendChild(dateDiv);
+                            
+                            // Actions 섹션 생성
+                            const actionsDiv = document.createElement('div');
+                            actionsDiv.className = 'actions';
+                            
+                            const editButton = document.createElement('button');
+                            editButton.className = 'edit';
+                            editButton.textContent = 'Edit';
+                            editButton.onclick = () => editPost(post.slug);
+                            
+                            const deleteButton = document.createElement('button');
+                            deleteButton.className = 'delete';
+                            deleteButton.textContent = 'Delete';
+                            deleteButton.onclick = () => deletePost(post.slug);
+                            
+                            actionsDiv.appendChild(editButton);
+                            actionsDiv.appendChild(deleteButton);
+                            
+                            postCard.appendChild(infoDiv);
+                            postCard.appendChild(actionsDiv);
+                            postList.appendChild(postCard);
                         });
                     });
             }

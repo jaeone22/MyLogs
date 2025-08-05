@@ -177,23 +177,71 @@
                     .then(res => res.json())
                     .then(comments => {
                         const commentList = document.getElementById('comment-list');
-                        commentList.innerHTML = '';
+                        commentList.replaceChildren();
                         comments.forEach(comment => {
                             const div = document.createElement('div');
                             div.className = 'comment-card';
-                            div.innerHTML = `
-                                <div class="info">
-                                    <div><strong>Post:</strong> ${comment.postTitle}</div>
-                                    <div><strong>Author:</strong> ${comment.author}</div>
-                                    <div><strong>Content:</strong> ${comment.content}</div>
-                                    <div><strong>Date:</strong> ${comment.cdate}</div>
-                                </div>
-                                <div class="actions">
-                                    <button class="edit" onclick="window.open('/post?id=${comment.postId}', '_blank')" style="background-color: seagreen;">View Post</button>
-                                    <button class="edit" onclick="editComment('${comment.id}')">Edit</button>
-                                    <button class="delete" onclick="deleteComment('${comment.id}')">Delete</button>
-                                </div>
-                            `;
+                            div.id = `comment-${comment.id}`; // 고유 ID 추가
+                            
+                            // Info 섹션 생성
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'info';
+                            
+                            const postDiv = document.createElement('div');
+                            const postStrong = document.createElement('strong');
+                            postStrong.textContent = 'Post:';
+                            postDiv.appendChild(postStrong);
+                            postDiv.append(' ' + comment.postTitle);
+                            
+                            const authorDiv = document.createElement('div');
+                            const authorStrong = document.createElement('strong');
+                            authorStrong.textContent = 'Author:';
+                            authorDiv.appendChild(authorStrong);
+                            authorDiv.append(' ' + comment.author);
+                            
+                            const contentDiv = document.createElement('div');
+                            const contentStrong = document.createElement('strong');
+                            contentStrong.textContent = 'Content:';
+                            contentDiv.appendChild(contentStrong);
+                            contentDiv.append(' ' + comment.content);
+                            
+                            const dateDiv = document.createElement('div');
+                            const dateStrong = document.createElement('strong');
+                            dateStrong.textContent = 'Date:';
+                            dateDiv.appendChild(dateStrong);
+                            dateDiv.append(' ' + comment.cdate);
+                            
+                            infoDiv.appendChild(postDiv);
+                            infoDiv.appendChild(authorDiv);
+                            infoDiv.appendChild(contentDiv);
+                            infoDiv.appendChild(dateDiv);
+                            
+                            // Actions 섹션 생성
+                            const actionsDiv = document.createElement('div');
+                            actionsDiv.className = 'actions';
+                            
+                            const viewButton = document.createElement('button');
+                            viewButton.className = 'edit';
+                            viewButton.style.backgroundColor = 'seagreen';
+                            viewButton.textContent = 'View Post';
+                            viewButton.onclick = () => window.open('/post?id=' + comment.postId, '_blank');
+                            
+                            const editButton = document.createElement('button');
+                            editButton.className = 'edit';
+                            editButton.textContent = 'Edit';
+                            editButton.onclick = () => editComment(comment.id);
+                            
+                            const deleteButton = document.createElement('button');
+                            deleteButton.className = 'delete';
+                            deleteButton.textContent = 'Delete';
+                            deleteButton.onclick = () => deleteComment(comment.id);
+                            
+                            actionsDiv.appendChild(viewButton);
+                            actionsDiv.appendChild(editButton);
+                            actionsDiv.appendChild(deleteButton);
+                            
+                            div.appendChild(infoDiv);
+                            div.appendChild(actionsDiv);
                             commentList.appendChild(div);
                         });
                     });
@@ -209,14 +257,26 @@
                 const now = Math.floor(Date.now() / 1000);
                 const token = await sha512(adminPassword + now);
 
-                fetch('/api/admin/comment/delete/' + id, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token })
-                }).then(res => {
-                    if (res.ok) loadComments();
-                    else alert("Failed to delete comment.");
-                });
+                try {
+                    const res = await fetch('/api/admin/comment/delete/' + id, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                    
+                    if (res.ok) {
+                        // DOM에서 해당 댓글 카드 즉시 제거
+                        const commentCard = document.getElementById(`comment-${id}`);
+                        if (commentCard) {
+                            commentCard.remove();
+                        }
+                    } else {
+                        alert("Failed to delete comment.");
+                    }
+                } catch (error) {
+                    console.error('Error deleting comment:', error);
+                    alert("Failed to delete comment.");
+                }
             }
         </script>
     </body>

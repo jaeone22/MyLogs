@@ -510,19 +510,68 @@
                 if (!parentEl) return;
                 const form = document.createElement("form");
                 form.className = "reply-form";
-                form.innerHTML = `
-                    <div class="comment-form-row">
-                        <textarea name="text" class="comment-textarea" placeholder="{{ML_TRANS_REPLY_TEXT}}" required></textarea>
-                    </div>
-                    <div class="comment-form-row" style="gap: 10px;">
-                        <input type="text" name="name" class="comment-input" placeholder="{{ML_TRANS_COMMENT_NAME}}" required />
-                        <input type="email" name="email" class="comment-input" placeholder="{{ML_TRANS_COMMENT_EMAIL}}" />
-                        <button type="submit" class="comment-submit">{{ML_TRANS_REPLY_SUBMIT}}</button>
-                    </div>
-                    <input type="hidden" name="postId" value="{{ML_DATA_ID}}" />
-                    <input type="hidden" name="date" value="" />
-                    <input type="hidden" name="parentId" value="${parentId}" />
-                `;
+                
+                // 첫 번째 comment-form-row (textarea)
+                const firstRow = document.createElement("div");
+                firstRow.className = "comment-form-row";
+                
+                const textarea = document.createElement("textarea");
+                textarea.name = "text";
+                textarea.className = "comment-textarea";
+                textarea.placeholder = "{{ML_TRANS_REPLY_TEXT}}";
+                textarea.required = true;
+                
+                firstRow.appendChild(textarea);
+                
+                // 두 번째 comment-form-row (input들과 버튼)
+                const secondRow = document.createElement("div");
+                secondRow.className = "comment-form-row";
+                secondRow.style.gap = "10px";
+                
+                const nameInput = document.createElement("input");
+                nameInput.type = "text";
+                nameInput.name = "name";
+                nameInput.className = "comment-input";
+                nameInput.placeholder = "{{ML_TRANS_COMMENT_NAME}}";
+                nameInput.required = true;
+                
+                const emailInput = document.createElement("input");
+                emailInput.type = "email";
+                emailInput.name = "email";
+                emailInput.className = "comment-input";
+                emailInput.placeholder = "{{ML_TRANS_COMMENT_EMAIL}}";
+                
+                const submitButton = document.createElement("button");
+                submitButton.type = "submit";
+                submitButton.className = "comment-submit";
+                submitButton.textContent = "{{ML_TRANS_REPLY_SUBMIT}}";
+                
+                secondRow.appendChild(nameInput);
+                secondRow.appendChild(emailInput);
+                secondRow.appendChild(submitButton);
+                
+                // Hidden input들
+                const postIdInput = document.createElement("input");
+                postIdInput.type = "hidden";
+                postIdInput.name = "postId";
+                postIdInput.value = "{{ML_DATA_ID}}";
+                
+                const dateInput = document.createElement("input");
+                dateInput.type = "hidden";
+                dateInput.name = "date";
+                dateInput.value = "";
+                
+                const parentIdInput = document.createElement("input");
+                parentIdInput.type = "hidden";
+                parentIdInput.name = "parentId";
+                parentIdInput.value = parentId;
+                
+                // 모든 요소를 form에 추가
+                form.appendChild(firstRow);
+                form.appendChild(secondRow);
+                form.appendChild(postIdInput);
+                form.appendChild(dateInput);
+                form.appendChild(parentIdInput);
                 form.onsubmit = async function (e) {
                     e.preventDefault();
                     const formData = new FormData(form);

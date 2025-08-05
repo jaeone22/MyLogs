@@ -299,8 +299,11 @@
             async function loadPost() {
                 const res = await fetch("/api/user/post/get?id=" + id);
                 if (!res.ok) {
-                    document.body.innerHTML =
-                        "<h2 style='color:crimson;'>Failed to load post.</h2>";
+                    document.body.replaceChildren();
+                    const errorElement = document.createElement("h2");
+                    errorElement.style.color = "crimson";
+                    errorElement.textContent = "Failed to load post.";
+                    document.body.appendChild(errorElement);
                     return;
                 }
                 const text = await res.text();
