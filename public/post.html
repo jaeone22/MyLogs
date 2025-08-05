@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <title>{{ML_DATA_TITLE}} - {{ML_BLOG_NAME}}</title>
+        <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
         <style>
             * {
                 box-sizing: border-box;
@@ -371,9 +372,11 @@
 
             #body img {
                 max-width: 100%;
+                max-height: 500px;
                 height: auto;
-                margin: 0.5em 0;
+                margin: 0.5em auto;
                 border-radius: 12px;
+                display: block;
             }
 
             #body table {
@@ -446,6 +449,9 @@
                                 {{ML_TRANS_COMMENT_SUBMIT}}
                             </button>
                         </div>
+                        <div class="comment-form-row hcaptcha-container" style="justify-content: center; margin-top: 10px;">
+                            <div class="h-captcha" data-sitekey="{{HCAPTCHA_SITE_KEY}}" data-callback="onHcaptchaSuccess"></div>
+                        </div>
                         <input
                             type="hidden"
                             name="postId"
@@ -465,17 +471,46 @@
         <footer></footer>
 
         <script>
+            let hcaptchaToken = '';
+            const hcaptchaEnabled = '{{HCAPTCHA_ENABLED}}' === 'true';
+            
+            // hCaptcha가 비활성화된 경우 위젯 숨기기
+            document.addEventListener('DOMContentLoaded', function() {
+                if (!hcaptchaEnabled) {
+                    const hcaptchaContainers = document.querySelectorAll('.hcaptcha-container');
+                    hcaptchaContainers.forEach(container => {
+                        container.style.display = 'none';
+                    });
+                    // hCaptcha가 비활성화되었을 때는 토큰을 항상 'disabled'로 설정
+                    hcaptchaToken = 'disabled';
+                }
+            });
+            
+            // hCaptcha 성공 콜백
+            function onHcaptchaSuccess(token) {
+                hcaptchaToken = token;
+            }
+            
             // 댓글 작성 폼 제출 처리
             const commentForm = document.getElementById("comment-form");
             if (commentForm) {
                 commentForm.addEventListener("submit", async function (e) {
                     e.preventDefault();
+                    
+                    // hCaptcha 검증 확인 (hCaptcha가 활성화된 경우에만)
+                    if (hcaptchaEnabled && !hcaptchaToken) {
+                        alert("Please complete the hCaptcha verification.");
+                        return;
+                    }
+                    
                     const form = e.target;
                     const formData = new FormData(form);
                     const body = {};
                     formData.forEach((v, k) => (body[k] = v));
                     // 날짜 자동 입력
                     body.date = new Date().toISOString();
+                    // hCaptcha 토큰 추가 (비활성화된 경우에도 토큰 전송)
+                    body.hcaptchaToken = hcaptchaToken;
                     // parentId는 기본적으로 빈 값(대댓글 기능 확장 가능)
                     try {
                         const res = await fetch("/api/user/chat/new", {
@@ -488,7 +523,7 @@
                             alert("Your comment has been posted!");
                             location.reload();
                         } else {
-                            alert("Failed to post comment.");
+                            alert("Failed to post comment: " + (data.error || "Unknown error"));
                         }
                     } catch (err) {
                         alert("Error occurred while posting comment.");
@@ -508,25 +543,111 @@
                 if (!parentEl) return;
                 const form = document.createElement("form");
                 form.className = "reply-form";
-                form.innerHTML = `
-                    <div class="comment-form-row">
-                        <textarea name="text" class="comment-textarea" placeholder="{{ML_TRANS_REPLY_TEXT}}" required></textarea>
-                    </div>
-                    <div class="comment-form-row" style="gap: 10px;">
-                        <input type="text" name="name" class="comment-input" placeholder="{{ML_TRANS_COMMENT_NAME}}" required />
-                        <input type="email" name="email" class="comment-input" placeholder="{{ML_TRANS_COMMENT_EMAIL}}" />
-                        <button type="submit" class="comment-submit">{{ML_TRANS_REPLY_SUBMIT}}</button>
-                    </div>
-                    <input type="hidden" name="postId" value="{{ML_DATA_ID}}" />
-                    <input type="hidden" name="date" value="" />
-                    <input type="hidden" name="parentId" value="${parentId}" />
-                `;
+                
+                // 첫 번째 comment-form-row (textarea)
+                const firstRow = document.createElement("div");
+                firstRow.className = "comment-form-row";
+                
+                const textarea = document.createElement("textarea");
+                textarea.name = "text";
+                textarea.className = "comment-textarea";
+                textarea.placeholder = "{{ML_TRANS_REPLY_TEXT}}";
+                textarea.required = true;
+                
+                firstRow.appendChild(textarea);
+                
+                // 두 번째 comment-form-row (input들과 버튼)
+                const secondRow = document.createElement("div");
+                secondRow.className = "comment-form-row";
+                secondRow.style.gap = "10px";
+                
+                const nameInput = document.createElement("input");
+                nameInput.type = "text";
+                nameInput.name = "name";
+                nameInput.className = "comment-input";
+                nameInput.placeholder = "{{ML_TRANS_COMMENT_NAME}}";
+                nameInput.required = true;
+                
+                const emailInput = document.createElement("input");
+                emailInput.type = "email";
+                emailInput.name = "email";
+                emailInput.className = "comment-input";
+                emailInput.placeholder = "{{ML_TRANS_COMMENT_EMAIL}}";
+                
+                const submitButton = document.createElement("button");
+                submitButton.type = "submit";
+                submitButton.className = "comment-submit";
+                submitButton.textContent = "{{ML_TRANS_REPLY_SUBMIT}}";
+                
+                secondRow.appendChild(nameInput);
+                secondRow.appendChild(emailInput);
+                secondRow.appendChild(submitButton);
+                
+                // hCaptcha row
+                const hcaptchaRow = document.createElement("div");
+                hcaptchaRow.className = "comment-form-row hcaptcha-container";
+                hcaptchaRow.style.justifyContent = "center";
+                hcaptchaRow.style.marginTop = "10px";
+                
+                const hcaptchaDiv = document.createElement("div");
+                hcaptchaDiv.className = "h-captcha";
+                hcaptchaDiv.setAttribute("data-sitekey", "{{HCAPTCHA_SITE_KEY}}");
+                const replyHcaptchaId = "reply-hcaptcha-" + Date.now();
+                hcaptchaDiv.setAttribute("data-callback", "onReplyHcaptchaSuccess");
+                hcaptchaDiv.id = replyHcaptchaId;
+                
+                // hCaptcha가 비활성화된 경우 숨기기
+                if (!hcaptchaEnabled) {
+                    hcaptchaRow.style.display = 'none';
+                }
+                
+                hcaptchaRow.appendChild(hcaptchaDiv);
+                
+                // Hidden input들
+                const postIdInput = document.createElement("input");
+                postIdInput.type = "hidden";
+                postIdInput.name = "postId";
+                postIdInput.value = "{{ML_DATA_ID}}";
+                
+                const dateInput = document.createElement("input");
+                dateInput.type = "hidden";
+                dateInput.name = "date";
+                dateInput.value = "";
+                
+                const parentIdInput = document.createElement("input");
+                parentIdInput.type = "hidden";
+                parentIdInput.name = "parentId";
+                parentIdInput.value = parentId;
+                
+                // 모든 요소를 form에 추가
+                form.appendChild(firstRow);
+                form.appendChild(secondRow);
+                form.appendChild(hcaptchaRow);
+                form.appendChild(postIdInput);
+                form.appendChild(dateInput);
+                form.appendChild(parentIdInput);
+                
+                let replyHcaptchaToken = hcaptchaEnabled ? '' : 'disabled';
+                
+                // 대댓글용 hCaptcha 콜백 (전역으로 설정)
+                window.onReplyHcaptchaSuccess = function(token) {
+                    replyHcaptchaToken = token;
+                };
+                
                 form.onsubmit = async function (e) {
                     e.preventDefault();
+                    
+                    // hCaptcha 검증 확인 (hCaptcha가 활성화된 경우에만)
+                    if (hcaptchaEnabled && !replyHcaptchaToken) {
+                        alert("Please complete the hCaptcha verification.");
+                        return;
+                    }
+                    
                     const formData = new FormData(form);
                     const body = {};
                     formData.forEach((v, k) => (body[k] = v));
                     body.date = new Date().toISOString();
+                    body.hcaptchaToken = replyHcaptchaToken;
                     try {
                         const res = await fetch("/api/user/chat/new", {
                             method: "POST",
@@ -537,7 +658,7 @@
                         if (data.success) {
                             location.reload();
                         } else {
-                            alert("Failed to post reply.");
+                            alert("Failed to post reply: " + (data.error || "Unknown error"));
                         }
                     } catch (err) {
                         alert("Error occurred while posting reply.");

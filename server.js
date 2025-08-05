@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { marked } = require("marked");
+const { verify } = require("hcaptcha");
 
 // 상수 정의
 const POSTS_DIR = path.join(__dirname, "posts");
@@ -12,19 +13,40 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const CHAT_DIR = path.join(__dirname, "comments");
 const TRASH_DIR = path.join(POSTS_DIR, "trash");
 const CHAT_TRASH_DIR = path.join(CHAT_DIR, "trash");
+const IMAGES_DIR = path.join(__dirname, "images");
 
-// trash 폴더가 없으면 생성
-if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR);
-if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR);
-if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR);
+// 필요한 폴더들이 없으면 생성
+if (!fs.existsSync(POSTS_DIR)) fs.mkdirSync(POSTS_DIR, { recursive: true });
+if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR, { recursive: true });
+if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR, { recursive: true });
+if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR, { recursive: true });
+if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
+app.use(express.json({ limit: '500mb' }));
 
 // 정적 파일 제공
 app.use(express.static(PUBLIC_DIR, { index: false }));
+app.use('/images', express.static(IMAGES_DIR));
 
 // ===== 유틸리티 함수들 =====
+
+// hCaptcha 활성화 여부 확인
+function isHcaptchaEnabled() {
+    const siteKey = process.env.HCAPTCHA_SITE_KEY;
+    const secretKey = process.env.HCAPTCHA_SECRET_KEY;
+    
+    // 사이트 키나 시크릿 키가 없거나 기본값이거나 빈 값이면 비활성화
+    if (!siteKey || !secretKey ||
+        siteKey === "YOUR_SITE_KEY_(LEAVE_BLANK_IF_NOT_USED)" ||
+        secretKey === "YOUR_SECRET_KEY_(LEAVE_BLANK_IF_NOT_USED)" ||
+        siteKey.trim() === "" ||
+        secretKey.trim() === "") {
+        return false;
+    }
+    
+    return true;
+}
 
 // 토큰 검증
 function verifyAdminToken(token, password) {
@@ -164,6 +186,8 @@ function wrapWithLayout(htmlFilePath, category = "", overrideId = "") {
                 process.env.ML_TRANS_REPLY_TEXT || "Write your reply...",
             "{{ML_TRANS_REPLY_SUBMIT}}":
                 process.env.ML_TRANS_REPLY_SUBMIT || "Reply",
+            "{{HCAPTCHA_SITE_KEY}}": process.env.HCAPTCHA_SITE_KEY || "",
+            "{{HCAPTCHA_ENABLED}}": isHcaptchaEnabled() ? "true" : "false",
             "{{ML_DATA_LIST}}": "",
             "{{ML_DATA_CATEGORY}}": "",
             "{{ML_DATA_COMMENTS}}": "",
@@ -209,7 +233,7 @@ function wrapWithLayout(htmlFilePath, category = "", overrideId = "") {
             const cdate = metadata.cdate || "";
 
             listHTML += `
-                <a href="/post?id=${id}" class="post-card visible" style="display:block;text-decoration:none;color:inherit;">
+                <a href="/post/${id}" class="post-card visible" style="display:block;text-decoration:none;color:inherit;">
                     <h3>${title}</h3>
                     <p><strong>${replacements["{{ML_TRANS_CATEGORY}}"]}:</strong> ${tag}</p>
                     <p><strong>${replacements["{{ML_TRANS_DATE}}"]}:</strong> ${cdate}</p>
@@ -275,8 +299,8 @@ app.get(["/", "/list"], (req, res) => {
 });
 
 // 단일 글 보기
-app.get("/post", (req, res) => {
-    const id = req.query.id;
+app.get("/post/:id", (req, res) => {
+    const id = req.params.id;
     if (!id || !/^[\w\-]+$/.test(id)) return res.status(400).end();
 
     const filePath = path.join(POSTS_DIR, `${id}.mlmark`);
@@ -294,10 +318,17 @@ app.get("/post", (req, res) => {
     const bodyStart = raw.indexOf("</ml-metadata>");
     const body =
         bodyStart >= 0
-            ? marked(raw.slice(bodyStart + 15).trim(), {
-                  breaks: true, // 줄바꿈을 <br>로 변환
-                  gfm: true, // GitHub Flavored Markdown 지원
-              })
+            ? (() => {
+                marked.use({
+                    tokenizer: {
+                        lheading() {} // Setext-style header 비활성화
+                    }
+                });
+                return marked(raw.slice(bodyStart + 15).trim(), {
+                    breaks: true, // 줄바꿈을 <br>로 변환
+                    gfm: true, // GitHub Flavored Markdown 지원
+                });
+            })()
             : "";
 
     let html = wrapWithLayout(path.join(PUBLIC_DIR, "post.html"), "", id);
@@ -313,12 +344,84 @@ app.get("/post", (req, res) => {
     }
 });
 
+// 기존 쿼리 형식 URL을 새로운 형식으로 리다이렉트
+app.get("/post", (req, res) => {
+    const id = req.query.id;
+    if (!id || !/^[\w\-]+$/.test(id)) return res.status(400).end();
+    
+    // 새로운 URL 형식으로 리다이렉트
+    res.redirect(301, `/post/${id}`);
+});
+
+// 이미지 업로드 API
+app.post("/api/admin/image/upload", (req, res) => {
+    const token = req.body.token;
+    if (!verifyAdminToken(token, process.env.ADMIN_PASSWORD || "PASSWORD"))
+        return res.status(401).json({ error: "Unauthorized" });
+
+    const { image, filename } = req.body;
+    if (!image || !filename) {
+        return res.status(400).json({ error: "Image and filename are required" });
+    }
+
+    try {
+        // Base64 데이터에서 실제 이미지 데이터 추출
+        const base64Data = image.replace(/^data:image\/[a-z]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // 파일 크기 체크 (500MB 제한)
+        if (buffer.length > 500 * 1024 * 1024) {
+            return res.status(400).json({ error: "File size too large (max 500MB)" });
+        }
+        
+        // 파일 확장자 확인
+        const ext = path.extname(filename).toLowerCase();
+        if (!['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+            return res.status(400).json({ error: "Unsupported file type" });
+        }
+        
+        // 고유한 파일명 생성 (타임스탬프 + 랜덤)
+        const uniqueFilename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + ext;
+        const filePath = path.join(IMAGES_DIR, uniqueFilename);
+        
+        // 파일 저장
+        fs.writeFileSync(filePath, buffer);
+        
+        // 성공 응답
+        res.json({
+            success: true,
+            filename: uniqueFilename,
+            url: `/images/${uniqueFilename}`
+        });
+    } catch (error) {
+        console.error('Image upload error:', error);
+        res.status(500).json({ error: "Failed to upload image" });
+    }
+});
+
 // 댓글 작성 API
-app.post("/api/user/chat/new", (req, res) => {
+app.post("/api/user/chat/new", async (req, res) => {
     // 파라미터 추출
-    const { postId, name, email, text, date, parentId } = req.body;
+    const { postId, name, email, text, date, parentId, hcaptchaToken } = req.body;
     if (!postId || !name || !text || !date) {
         return res.status(400).json({ error: "Required fields are missing." });
+    }
+
+    // hCaptcha 검증 (활성화된 경우에만)
+    if (isHcaptchaEnabled()) {
+        if (!hcaptchaToken) {
+            return res.status(400).json({ error: "hCaptcha verification is required." });
+        }
+
+        try {
+            const hcaptchaResponse = await verify(process.env.HCAPTCHA_SECRET_KEY, hcaptchaToken);
+            if (!hcaptchaResponse.success) {
+                return res.status(400).json({ error: "hCaptcha verification failed." });
+            }
+        } catch (error) {
+            console.error('hCaptcha verification error:', error);
+            return res.status(500).json({ error: "hCaptcha verification error." });
+        }
     }
 
     // 댓글 저장 경로
@@ -739,7 +842,31 @@ app.use((req, res, next) => {
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log();
-    console.log(`==== MyLogs v0.1 ====`);
+    console.log(`==== MyLogs v0.2 ====`);
     console.log(`View more on https://github.com/jaeone22/MyLogs`);
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log(
+        `hCaptcha status: ${
+            isHcaptchaEnabled()
+                ? "\x1b[32menabled\x1b[0m"
+                : "\x1b[31mdisabled\x1b[0m"
+        }`
+    );
+    if (
+        !process.env.ADMIN_PASSWORD ||
+        process.env.ADMIN_PASSWORD === "PASSWORD"
+    ) {
+        console.log(
+            "\x1b[33m%s\x1b[0m",
+            "Warning: Default admin password is used. Please change it."
+        );
+    }
+        if (
+        process.env.ADMIN_PASSWORD === "1234"
+    ) {
+        console.log(
+            "\x1b[33m%s\x1b[0m",
+            "Warning: Your admin password is too weak. Please change it."
+        );
+    }
 });
