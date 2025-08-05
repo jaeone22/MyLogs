@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { marked } = require("marked");
+const { verify } = require("hcaptcha");
 
 // 상수 정의
 const POSTS_DIR = path.join(__dirname, "posts");
@@ -168,6 +169,8 @@ function wrapWithLayout(htmlFilePath, category = "", overrideId = "") {
                 process.env.ML_TRANS_REPLY_TEXT || "Write your reply...",
             "{{ML_TRANS_REPLY_SUBMIT}}":
                 process.env.ML_TRANS_REPLY_SUBMIT || "Reply",
+            "{{HCAPTCHA_SITE_KEY}}": process.env.HCAPTCHA_SITE_KEY || "",
+            "{{HCAPTCHA_ENABLED}}": (process.env.HCAPTCHA_SITE_KEY && process.env.HCAPTCHA_SECRET_KEY) ? "true" : "false",
             "{{ML_DATA_LIST}}": "",
             "{{ML_DATA_CATEGORY}}": "",
             "{{ML_DATA_COMMENTS}}": "",
@@ -380,11 +383,32 @@ app.post("/api/admin/image/upload", (req, res) => {
 });
 
 // 댓글 작성 API
-app.post("/api/user/chat/new", (req, res) => {
+app.post("/api/user/chat/new", async (req, res) => {
     // 파라미터 추출
-    const { postId, name, email, text, date, parentId } = req.body;
+    const { postId, name, email, text, date, parentId, hcaptchaToken } = req.body;
     if (!postId || !name || !text || !date) {
         return res.status(400).json({ error: "Required fields are missing." });
+    }
+
+    // hCaptcha 검증 (환경변수가 설정된 경우에만)
+    const hcaptchaSiteKey = process.env.HCAPTCHA_SITE_KEY;
+    const hcaptchaSecret = process.env.HCAPTCHA_SECRET_KEY;
+    
+    if (hcaptchaSiteKey && hcaptchaSecret) {
+        // hCaptcha가 활성화된 경우에만 검증
+        if (!hcaptchaToken) {
+            return res.status(400).json({ error: "hCaptcha verification is required." });
+        }
+
+        try {
+            const hcaptchaResponse = await verify(hcaptchaSecret, hcaptchaToken);
+            if (!hcaptchaResponse.success) {
+                return res.status(400).json({ error: "hCaptcha verification failed." });
+            }
+        } catch (error) {
+            console.error('hCaptcha verification error:', error);
+            return res.status(500).json({ error: "hCaptcha verification error." });
+        }
     }
 
     // 댓글 저장 경로
