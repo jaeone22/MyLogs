@@ -888,7 +888,7 @@ app.use((req, res, next) => {
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log();
-    console.log(`==== MyLogs v0.2 ====`);
+    console.log(`==== MyLogs v0.3 ====`);
     console.log(`View more on https://github.com/jaeone22/MyLogs`);
     console.log(`Server running at http://localhost:${PORT}`);
     console.log(
