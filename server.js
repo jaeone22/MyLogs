@@ -53,7 +53,7 @@ function isHcaptchaEnabled() {
 function verifyAdminToken(token, password) {
     if (!token || typeof token !== "string") return false;
     const now = Math.floor(Date.now() / 1000);
-    for (let offset = -5; offset <= 5; offset++) {
+    for (let offset = -60; offset <= 60; offset++) {
         const compare = now + offset;
         const expected = crypto
             .createHash("sha512")
