@@ -92,7 +92,9 @@
             <header>
                 <div style="display: flex; align-items: center; gap: 4px">
                     <a href="/" id="logo">{{ML_BLOG_NAME}}</a>
-                    <a href="/admin" id="logo" style="color: dodgerblue">Admin</a>
+                    <a href="/admin" id="logo" style="color: dodgerblue"
+                        >Admin</a
+                    >
                 </div>
             </header>
 
@@ -114,8 +116,8 @@
                             font-size: 1.2rem;
                             line-height: 1.75;
                             width: 100%;
+                            height: 50vh;
                             resize: vertical;
-                            min-height: 150px;
                         "
                     ></textarea>
                 </div>
@@ -127,15 +129,15 @@
         <script src="/admin/auth.js"></script>
         <script>
             let id = new URLSearchParams(location.search).get("id");
-        
+
             async function loadComment() {
                 const now = Math.floor(Date.now() / 1000);
                 const token = await sha512(adminPassword + (now - 1));
                 const res = await fetch("/api/admin/comment/get?id=" + id, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json'},
-                    body: JSON.stringify({ token })
-                })
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token }),
+                });
                 if (!res.ok) {
                     document.body.replaceChildren();
                     const errorElement = document.createElement("h2");
@@ -147,29 +149,29 @@
                 const comment = await res.json();
                 document.getElementById("content").value = comment.content;
             }
-        
+
             async function submitEdit() {
                 const content = document.getElementById("content").value.trim();
-        
+
                 if (!content) {
                     alert("Please fill content field.");
                     return;
                 }
-        
+
                 const now = Math.floor(Date.now() / 1000);
                 const token = await sha512(adminPassword + now);
-        
+
                 const payload = {
                     content,
                     token,
                 };
-        
+
                 const res = await fetch("/api/admin/comment/edit/" + id, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
                 });
-        
+
                 if (res.ok) {
                     alert("Comment updated!");
                     location.href = "/admin/comment/list.html";
@@ -177,27 +179,29 @@
                     alert("Failed to update comment.");
                 }
             }
-        
+
             function insertButtons() {
                 const buttonContainer = document.createElement("div");
                 buttonContainer.style.cssText =
                     "margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;";
-        
+
                 const saveButton = document.createElement("button");
                 saveButton.textContent = "Save";
                 saveButton.style.cssText =
                     "padding: 8px 16px; font-weight: bold; border-radius: 25px; background-color: dodgerblue; color: white; border: none; cursor: pointer;";
                 saveButton.onclick = submitEdit;
                 buttonContainer.appendChild(saveButton);
-        
+
                 const main = document.querySelector("main");
                 main.appendChild(buttonContainer);
             }
-        
-            document.addEventListener('DOMContentLoaded', () => initializeAdminPage(() => {
-                loadComment();
-                insertButtons();
-            }));
+
+            document.addEventListener("DOMContentLoaded", () =>
+                initializeAdminPage(() => {
+                    loadComment();
+                    insertButtons();
+                })
+            );
         </script>
     </body>
 </html>

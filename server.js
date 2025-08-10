@@ -6,6 +6,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const { marked } = require("marked");
 const { verify } = require("hcaptcha");
+const xss = require("xss");
 
 // 상수 정의
 const POSTS_DIR = path.join(__dirname, "posts");
@@ -19,15 +20,16 @@ const IMAGES_DIR = path.join(__dirname, "images");
 if (!fs.existsSync(POSTS_DIR)) fs.mkdirSync(POSTS_DIR, { recursive: true });
 if (!fs.existsSync(TRASH_DIR)) fs.mkdirSync(TRASH_DIR, { recursive: true });
 if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR, { recursive: true });
-if (!fs.existsSync(CHAT_TRASH_DIR)) fs.mkdirSync(CHAT_TRASH_DIR, { recursive: true });
+if (!fs.existsSync(CHAT_TRASH_DIR))
+    fs.mkdirSync(CHAT_TRASH_DIR, { recursive: true });
 if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
-app.use(express.urlencoded({ extended: true, limit: '500mb' }));
-app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: "500mb" }));
+app.use(express.json({ limit: "500mb" }));
 
 // 정적 파일 제공
 app.use(express.static(PUBLIC_DIR, { index: false }));
-app.use('/images', express.static(IMAGES_DIR));
+app.use("/images", express.static(IMAGES_DIR));
 
 // ===== 유틸리티 함수들 =====
 
@@ -35,16 +37,19 @@ app.use('/images', express.static(IMAGES_DIR));
 function isHcaptchaEnabled() {
     const siteKey = process.env.HCAPTCHA_SITE_KEY;
     const secretKey = process.env.HCAPTCHA_SECRET_KEY;
-    
+
     // 사이트 키나 시크릿 키가 없거나 기본값이거나 빈 값이면 비활성화
-    if (!siteKey || !secretKey ||
+    if (
+        !siteKey ||
+        !secretKey ||
         siteKey === "YOUR_SITE_KEY_(LEAVE_BLANK_IF_NOT_USED)" ||
         secretKey === "YOUR_SECRET_KEY_(LEAVE_BLANK_IF_NOT_USED)" ||
         siteKey.trim() === "" ||
-        secretKey.trim() === "") {
+        secretKey.trim() === ""
+    ) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -52,7 +57,7 @@ function isHcaptchaEnabled() {
 function verifyAdminToken(token, password) {
     if (!token || typeof token !== "string") return false;
     const now = Math.floor(Date.now() / 1000);
-    for (let offset = -5; offset <= 5; offset++) {
+    for (let offset = -60; offset <= 60; offset++) {
         const compare = now + offset;
         const expected = crypto
             .createHash("sha512")
@@ -319,16 +324,16 @@ app.get("/post/:id", (req, res) => {
     const body =
         bodyStart >= 0
             ? (() => {
-                marked.use({
-                    tokenizer: {
-                        lheading() {} // Setext-style header 비활성화
-                    }
-                });
-                return marked(raw.slice(bodyStart + 15).trim(), {
-                    breaks: true, // 줄바꿈을 <br>로 변환
-                    gfm: true, // GitHub Flavored Markdown 지원
-                });
-            })()
+                  marked.use({
+                      tokenizer: {
+                          lheading() {}, // Setext-style header 비활성화
+                      },
+                  });
+                  return marked(raw.slice(bodyStart + 15).trim(), {
+                      breaks: true, // 줄바꿈을 <br>로 변환
+                      gfm: true, // GitHub Flavored Markdown 지원
+                  });
+              })()
             : "";
 
     let html = wrapWithLayout(path.join(PUBLIC_DIR, "post.html"), "", id);
@@ -348,7 +353,7 @@ app.get("/post/:id", (req, res) => {
 app.get("/post", (req, res) => {
     const id = req.query.id;
     if (!id || !/^[\w\-]+$/.test(id)) return res.status(400).end();
-    
+
     // 새로운 URL 형식으로 리다이렉트
     res.redirect(301, `/post/${id}`);
 });
@@ -361,40 +366,45 @@ app.post("/api/admin/image/upload", (req, res) => {
 
     const { image, filename } = req.body;
     if (!image || !filename) {
-        return res.status(400).json({ error: "Image and filename are required" });
+        return res
+            .status(400)
+            .json({ error: "Image and filename are required" });
     }
 
     try {
         // Base64 데이터에서 실제 이미지 데이터 추출
         const base64Data = image.replace(/^data:image\/[a-z]+;base64,/, "");
-        const buffer = Buffer.from(base64Data, 'base64');
-        
+        const buffer = Buffer.from(base64Data, "base64");
+
         // 파일 크기 체크 (500MB 제한)
         if (buffer.length > 500 * 1024 * 1024) {
-            return res.status(400).json({ error: "File size too large (max 500MB)" });
+            return res
+                .status(400)
+                .json({ error: "File size too large (max 500MB)" });
         }
-        
+
         // 파일 확장자 확인
         const ext = path.extname(filename).toLowerCase();
-        if (!['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+        if (![".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
             return res.status(400).json({ error: "Unsupported file type" });
         }
-        
+
         // 고유한 파일명 생성 (타임스탬프 + 랜덤)
-        const uniqueFilename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + ext;
+        const uniqueFilename =
+            Date.now() + "_" + Math.random().toString(36).substr(2, 9) + ext;
         const filePath = path.join(IMAGES_DIR, uniqueFilename);
-        
+
         // 파일 저장
         fs.writeFileSync(filePath, buffer);
-        
+
         // 성공 응답
         res.json({
             success: true,
             filename: uniqueFilename,
-            url: `/images/${uniqueFilename}`
+            url: `/images/${uniqueFilename}`,
         });
     } catch (error) {
-        console.error('Image upload error:', error);
+        console.error("Image upload error:", error);
         res.status(500).json({ error: "Failed to upload image" });
     }
 });
@@ -402,7 +412,8 @@ app.post("/api/admin/image/upload", (req, res) => {
 // 댓글 작성 API
 app.post("/api/user/chat/new", async (req, res) => {
     // 파라미터 추출
-    const { postId, name, email, text, date, parentId, hcaptchaToken } = req.body;
+    const { postId, name, email, text, date, parentId, hcaptchaToken } =
+        req.body;
     if (!postId || !name || !text || !date) {
         return res.status(400).json({ error: "Required fields are missing." });
     }
@@ -410,17 +421,26 @@ app.post("/api/user/chat/new", async (req, res) => {
     // hCaptcha 검증 (활성화된 경우에만)
     if (isHcaptchaEnabled()) {
         if (!hcaptchaToken) {
-            return res.status(400).json({ error: "hCaptcha verification is required." });
+            return res
+                .status(400)
+                .json({ error: "hCaptcha verification is required." });
         }
 
         try {
-            const hcaptchaResponse = await verify(process.env.HCAPTCHA_SECRET_KEY, hcaptchaToken);
+            const hcaptchaResponse = await verify(
+                process.env.HCAPTCHA_SECRET_KEY,
+                hcaptchaToken
+            );
             if (!hcaptchaResponse.success) {
-                return res.status(400).json({ error: "hCaptcha verification failed." });
+                return res
+                    .status(400)
+                    .json({ error: "hCaptcha verification failed." });
             }
         } catch (error) {
-            console.error('hCaptcha verification error:', error);
-            return res.status(500).json({ error: "hCaptcha verification error." });
+            console.error("hCaptcha verification error:", error);
+            return res
+                .status(500)
+                .json({ error: "hCaptcha verification error." });
         }
     }
 
@@ -450,9 +470,9 @@ app.post("/api/user/chat/new", async (req, res) => {
     const newComment = {
         id,
         parentId: parentId || null,
-        name,
-        email: email || "",
-        text,
+        name: xss(name),
+        email: xss(email || ""),
+        text: xss(text),
         date,
     };
 
@@ -642,16 +662,20 @@ app.post("/api/admin/comment/list", (req, res) => {
     }
 
     const allComments = [];
-    const chatFiles = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    const chatFiles = fs
+        .readdirSync(CHAT_DIR)
+        .filter((f) => f.endsWith(".json"));
 
     for (const file of chatFiles) {
-        const postId = file.replace('.json', '');
+        const postId = file.replace(".json", "");
         const postFilePath = path.join(POSTS_DIR, `${postId}.mlmark`);
-        let postTitle = 'Unknown Post';
+        let postTitle = "Unknown Post";
         try {
             if (fs.existsSync(postFilePath)) {
-                const postContent = fs.readFileSync(postFilePath, 'utf-8');
-                const titleMatch = postContent.match(/<ml-title>(.*?)<\/ml-title>/);
+                const postContent = fs.readFileSync(postFilePath, "utf-8");
+                const titleMatch = postContent.match(
+                    /<ml-title>(.*?)<\/ml-title>/
+                );
                 if (titleMatch && titleMatch[1]) {
                     postTitle = titleMatch[1];
                 }
@@ -662,7 +686,7 @@ app.post("/api/admin/comment/list", (req, res) => {
 
         const chatFile = path.join(CHAT_DIR, file);
         try {
-            const comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            const comments = JSON.parse(fs.readFileSync(chatFile, "utf-8"));
             for (const comment of comments) {
                 allComments.push({
                     id: comment.id,
@@ -670,14 +694,20 @@ app.post("/api/admin/comment/list", (req, res) => {
                     postTitle: postTitle,
                     author: comment.name,
                     content: comment.text,
-                    cdate: comment.date
+                    cdate: comment.date,
                 });
             }
         } catch (e) {
             // 댓글 파일 파싱 오류 무시
         }
     }
-    res.json(allComments.sort((a,b) => parseInt(b.cdate.replace(/\D/g,'')) - parseInt(a.cdate.replace(/\D/g,''))));
+    res.json(
+        allComments.sort(
+            (a, b) =>
+                parseInt(b.cdate.replace(/\D/g, "")) -
+                parseInt(a.cdate.replace(/\D/g, ""))
+        )
+    );
 });
 
 // 단일 댓글 조회
@@ -689,19 +719,19 @@ app.post("/api/admin/comment/get", (req, res) => {
     const id = req.query.id;
     if (!id) return res.status(400).end();
 
-    const files = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(CHAT_DIR).filter((f) => f.endsWith(".json"));
     for (const file of files) {
         const chatFile = path.join(CHAT_DIR, file);
         try {
-            const comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
-            const found = comments.find(c => c.id === id);
+            const comments = JSON.parse(fs.readFileSync(chatFile, "utf-8"));
+            const found = comments.find((c) => c.id === id);
             if (found) {
                 return res.json({
                     id: found.id,
                     content: found.text,
                     author: found.name,
                     cdate: found.date,
-                    postId: file.replace('.json', '')
+                    postId: file.replace(".json", ""),
                 });
             }
         } catch (e) {
@@ -709,7 +739,7 @@ app.post("/api/admin/comment/get", (req, res) => {
         }
     }
 
-    res.status(404).json({ error: 'Comment not found' });
+    res.status(404).json({ error: "Comment not found" });
 });
 
 // 댓글 수정
@@ -722,22 +752,26 @@ app.post("/api/admin/comment/edit/:id", (req, res) => {
     const { content } = req.body;
     if (!id || !content) return res.status(400).end();
 
-    const files = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(CHAT_DIR).filter((f) => f.endsWith(".json"));
     for (const file of files) {
         const chatFile = path.join(CHAT_DIR, file);
         try {
-            let comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
-            const commentIndex = comments.findIndex(c => c.id === id);
+            let comments = JSON.parse(fs.readFileSync(chatFile, "utf-8"));
+            const commentIndex = comments.findIndex((c) => c.id === id);
             if (commentIndex !== -1) {
                 comments[commentIndex].text = content;
-                fs.writeFileSync(chatFile, JSON.stringify(comments, null, 2), 'utf-8');
+                fs.writeFileSync(
+                    chatFile,
+                    JSON.stringify(comments, null, 2),
+                    "utf-8"
+                );
                 return res.json({ ok: true });
             }
         } catch (e) {
             //
         }
     }
-    res.status(404).json({ error: 'Comment not found' });
+    res.status(404).json({ error: "Comment not found" });
 });
 
 // 댓글 삭제
@@ -749,22 +783,26 @@ app.post("/api/admin/comment/delete/:id", (req, res) => {
     const id = req.params.id;
     if (!id) return res.status(400).end();
 
-    const files = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(CHAT_DIR).filter((f) => f.endsWith(".json"));
     for (const file of files) {
         const chatFile = path.join(CHAT_DIR, file);
         try {
-            let comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            let comments = JSON.parse(fs.readFileSync(chatFile, "utf-8"));
             const initialLength = comments.length;
-            comments = comments.filter(c => c.id !== id);
+            comments = comments.filter((c) => c.id !== id);
             if (comments.length < initialLength) {
-                fs.writeFileSync(chatFile, JSON.stringify(comments, null, 2), 'utf-8');
+                fs.writeFileSync(
+                    chatFile,
+                    JSON.stringify(comments, null, 2),
+                    "utf-8"
+                );
                 return res.json({ ok: true });
             }
         } catch (e) {
             //
         }
     }
-    res.status(404).json({ error: 'Comment not found' });
+    res.status(404).json({ error: "Comment not found" });
 });
 
 // 최근 댓글 조회 (관리자용)
@@ -775,25 +813,31 @@ app.post("/api/admin/comment/recent", (req, res) => {
     }
 
     const allComments = [];
-    const chatFiles = fs.readdirSync(CHAT_DIR).filter(f => f.endsWith('.json'));
+    const chatFiles = fs
+        .readdirSync(CHAT_DIR)
+        .filter((f) => f.endsWith(".json"));
 
     for (const file of chatFiles) {
-        const postId = file.replace('.json', '');
+        const postId = file.replace(".json", "");
         const postFilePath = path.join(POSTS_DIR, `${postId}.mlmark`);
-        let postTitle = 'Unknown Post';
+        let postTitle = "Unknown Post";
         try {
             if (fs.existsSync(postFilePath)) {
-                const postContent = fs.readFileSync(postFilePath, 'utf-8');
-                const titleMatch = postContent.match(/<ml-title>(.*?)<\/ml-title>/);
+                const postContent = fs.readFileSync(postFilePath, "utf-8");
+                const titleMatch = postContent.match(
+                    /<ml-title>(.*?)<\/ml-title>/
+                );
                 if (titleMatch && titleMatch[1]) {
                     postTitle = titleMatch[1];
                 }
             }
-        } catch (e) { /* 무시 */ }
+        } catch (e) {
+            /* 무시 */
+        }
 
         const chatFile = path.join(CHAT_DIR, file);
         try {
-            const comments = JSON.parse(fs.readFileSync(chatFile, 'utf-8'));
+            const comments = JSON.parse(fs.readFileSync(chatFile, "utf-8"));
             for (const comment of comments) {
                 allComments.push({
                     id: comment.id,
@@ -801,16 +845,18 @@ app.post("/api/admin/comment/recent", (req, res) => {
                     postTitle: postTitle,
                     author: comment.name,
                     content: comment.text,
-                    cdate: comment.date
+                    cdate: comment.date,
                 });
             }
-        } catch (e) { /* 무시 */ }
+        } catch (e) {
+            /* 무시 */
+        }
     }
-    
+
     const recentComments = allComments
         .sort((a, b) => new Date(b.cdate) - new Date(a.cdate))
         .slice(0, 10);
-    
+
     res.json(recentComments);
 });
 
@@ -842,7 +888,7 @@ app.use((req, res, next) => {
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log();
-    console.log(`==== MyLogs v0.2 ====`);
+    console.log(`==== MyLogs v0.3 ====`);
     console.log(`View more on https://github.com/jaeone22/MyLogs`);
     console.log(`Server running at http://localhost:${PORT}`);
     console.log(
@@ -861,9 +907,7 @@ app.listen(PORT, () => {
             "Warning: Default admin password is used. Please change it."
         );
     }
-        if (
-        process.env.ADMIN_PASSWORD === "1234"
-    ) {
+    if (process.env.ADMIN_PASSWORD === "1234") {
         console.log(
             "\x1b[33m%s\x1b[0m",
             "Warning: Your admin password is too weak. Please change it."

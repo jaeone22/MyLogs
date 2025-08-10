@@ -1,362 +1,426 @@
 <!DOCTYPE html>
 <html lang="{{ML_TRANS_LANG}}">
-<head>
-	<meta charset="UTF-8">
-	<title>{{ML_BLOG_NAME}} - Admin</title>
-	<style>
-		* {
-			box-sizing: border-box;
-		}
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ML_BLOG_NAME}} - Admin</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
 
-		html, body {
-			height: 100%;
-		}
+            html,
+            body {
+                height: 100%;
+            }
 
-		body {
-			background-color: #121212;
-			color: #e0e0e0;
-			font-family: Arial, sans-serif;
-			margin: 0;
-			padding: 0;
-			overflow-x: hidden;
-			height: 100%;
-			transition: background-color 0.3s ease;
-		}
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+                height: 100%;
+                transition: background-color 0.3s ease;
+            }
 
-		.layout-container {
-			display: flex;
-			flex-direction: column;
-			min-height: 100vh;
-			max-width: 900px;
-			margin: 0 auto;
-			width: 100%;
-		}
+            .layout-container {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+                max-width: 900px;
+                margin: 0 auto;
+                width: 100%;
+            }
 
-		/* 헤더 */
-		header {
-			top: 0;
-			bottom: auto;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			background-color: rgba(40, 40, 40, 0.7);
-			backdrop-filter: blur(8px);
-			-webkit-backdrop-filter: blur(8px);
-			color: white;
-			padding: 10px 20px;
-			position: fixed;
-			width: 100%;
-			left: 0;
-			z-index: 10;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-			overflow: hidden;
-		}
+            /* 헤더 */
+            header {
+                top: 0;
+                bottom: auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: rgba(40, 40, 40, 0.7);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                color: white;
+                padding: 10px 20px;
+                position: fixed;
+                width: 100%;
+                left: 0;
+                z-index: 10;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                overflow: hidden;
+            }
 
-		/* 푸터 */
-		footer {
-			width: 100%;
-			max-width: 900px;
-			margin: 0 auto;
-			text-align: center;
-			color: white;
-			padding: 10px;
-			border: none;
-			transition: opacity 0.5s ease;
-		}
+            /* 푸터 */
+            footer {
+                width: 100%;
+                max-width: 900px;
+                margin: 0 auto;
+                text-align: center;
+                color: white;
+                padding: 10px;
+                border: none;
+                transition: opacity 0.5s ease;
+            }
 
-		/* 메인 컨텐츠 */
-		main {
-			padding: 60px 0px 80px;
-			margin-top: 60px;
-			margin-bottom: 40px;
-			flex: 1;
-			font-size: 1.2rem;
-			line-height: 1.75;
-			word-spacing: 0.05em;
-		}
-		/* 로고 */
-		#logo {
-			font-weight: bold;
-			text-decoration: none;
-			color: inherit;
-			padding: 6px 12px;
-			border-radius: 25px;
-			transition: background-color 0.2s;
-			cursor: pointer;
-		}
-		#logo:hover {
-			background-color: rgba(255, 255, 255, 0.1);
-		}
+            /* 메인 컨텐츠 */
+            main {
+                padding: 60px 0px 80px;
+                margin-top: 60px;
+                margin-bottom: 40px;
+                flex: 1;
+                font-size: 1.2rem;
+                line-height: 1.75;
+                word-spacing: 0.05em;
+            }
+            /* 로고 */
+            #logo {
+                font-weight: bold;
+                text-decoration: none;
+                color: inherit;
+                padding: 6px 12px;
+                border-radius: 25px;
+                transition: background-color 0.2s;
+                cursor: pointer;
+            }
+            #logo:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
 
-		/* 글 제목 */
-		#title {
-			font-size: 2rem;
-			font-weight: bold;
-			margin-bottom: 20px;
-		}
+            /* 글 제목 */
+            #title {
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
 
-		/* 글 내용 */
-		#body {
-			white-space: pre-wrap;
-			font-size: 1.2rem;
-			line-height: 1.75;
-			padding-top: 10px;
-		}
-		#body p {
-			margin-top: 0px;
-			margin-bottom: 0px;
-			transition: all 0.2s ease;
-		}
-		#body p:hover {
-			background-color: rgba(255, 255, 155, 0.05);
-			border-radius: 10px;
-			padding: 5px 10px;
-			margin: -5px -10px;
-			transform: scale(1.02);
-		}
-		@media (max-width: 768px) {
-			#body p:hover {
-				background-color: transparent;
-				padding: 0;
-				margin: 0;
-				transform: none;
-			}
-		}
+            /* 글 내용 */
+            #body {
+                white-space: pre-wrap;
+                font-size: 1.2rem;
+                line-height: 1.75;
+                padding-top: 10px;
+            }
+            #body p {
+                margin-top: 0px;
+                margin-bottom: 0px;
+                transition: all 0.2s ease;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="layout-container">
+            <!-- 블로그 정보 -->
+            <header>
+                <div style="display: flex; align-items: center; gap: 4px">
+                    <a href="/" id="logo">{{ML_BLOG_NAME}}</a>
+                    <a href="/admin" id="logo" style="color: dodgerblue"
+                        >Admin</a
+                    >
+                </div>
+            </header>
 
-		/* 페이지 강조 모드일 때 */
-		body.hovering header,
-		body.hovering footer {
-			opacity: 0.1;
-		}
-		body.hovering {
-			background-color: #0a0a0a;
-			cursor: none;
-		}
-		@media (pointer: fine) {
-			body.hovering {
-				cursor: none;
-			}
-		}
+            <!-- 메인 컨텐츠 -->
+            <main>
+                <div
+                    style="
+                        background-color: rgba(40, 40, 40, 0.7);
+                        padding: 30px;
+                        border-radius: 25px;
+                        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+                    "
+                >
+                    <input
+                        id="title"
+                        placeholder="Title"
+                        autocomplete="off"
+                        style="
+                            all: unset;
+                            display: block;
+                            font-size: 2rem;
+                            font-weight: bold;
+                            margin-bottom: 20px;
+                            width: 100%;
+                        "
+                    />
+                    <input
+                        id="tag"
+                        placeholder="Category"
+                        autocomplete="off"
+                        style="
+                            all: unset;
+                            display: block;
+                            font-size: 1rem;
+                            opacity: 0.7;
+                            margin-bottom: 20px;
+                            width: 100%;
+                        "
+                    />
 
-		/* 가상 커서 스타일 */
-		#fake-cursor {
-			position: fixed;
-			width: 18px;
-			height: 18px;
-			border-radius: 50%;
-			background-color: rgba(255, 255, 255, 0.3);
-			pointer-events: none;
-			transform: translate(-50%, -50%);
-			z-index: 9999;
-		}
-	</style>
-</head>
-<body>
-	<div class="layout-container">
-	<!-- 블로그 정보 -->
-    <header>
-        <div style="display: flex; align-items: center; gap: 4px;">
-            <a href="/" id="logo">{{ML_BLOG_NAME}}</a>
-            <a href="/admin" id="logo" style="color: dodgerblue;">Admin</a>
+                    <!-- Image Upload Section -->
+                    <div
+                        style="
+                            margin-bottom: 20px;
+                            padding: 15px;
+                            border: 2px dashed rgba(255, 255, 255, 0.3);
+                            border-radius: 15px;
+                        "
+                    >
+                        <input
+                            type="file"
+                            id="imageInput"
+                            accept="image/*"
+                            style="display: none"
+                            onchange="handleImageUpload(event)"
+                        />
+                        <button
+                            onclick="document.getElementById('imageInput').click()"
+                            style="
+                                padding: 8px 16px;
+                                border-radius: 20px;
+                                background-color: rgba(255, 255, 255, 0.1);
+                                color: white;
+                                border: 1px solid rgba(255, 255, 255, 0.3);
+                                cursor: pointer;
+                                margin-right: 10px;
+                            "
+                        >
+                            📷 Upload Image
+                        </button>
+                        <div
+                            id="imagePreview"
+                            style="margin-top: 15px; display: none"
+                        >
+                            <img
+                                id="previewImg"
+                                style="
+                                    max-width: 200px;
+                                    max-height: 200px;
+                                    border-radius: 10px;
+                                "
+                            />
+                            <div style="margin-top: 10px">
+                                <button
+                                    onclick="insertImageToContent()"
+                                    style="
+                                        padding: 6px 12px;
+                                        border-radius: 15px;
+                                        background-color: green;
+                                        color: white;
+                                        border: none;
+                                        cursor: pointer;
+                                        margin-right: 10px;
+                                    "
+                                >
+                                    ✓ Insert into Text
+                                </button>
+                                <button
+                                    onclick="cancelImageUpload()"
+                                    style="
+                                        padding: 6px 12px;
+                                        border-radius: 15px;
+                                        background-color: crimson;
+                                        color: white;
+                                        border: none;
+                                        cursor: pointer;
+                                    "
+                                >
+                                    ✗ Cancel
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            id="uploadStatus"
+                            style="
+                                margin-top: 10px;
+                                font-size: 0.9rem;
+                                color: #aaa;
+                            "
+                        ></div>
+                    </div>
+
+                    <textarea
+                        id="content"
+                        placeholder="Write the contents with MLmark..."
+                        autocomplete="off"
+                        style="
+                            all: unset;
+                            display: block;
+                            font-size: 1.2rem;
+                            line-height: 1.75;
+                            width: 100%;
+                            height: 50vh;
+                            resize: vertical;
+                        "
+                    ></textarea>
+                </div>
+                <div style="text-align: right; margin-top: 20px">
+                    <button
+                        onclick="submitPost()"
+                        style="
+                            padding: 8px 16px;
+                            border-radius: 25px;
+                            font-weight: bold;
+                            background-color: dodgerblue;
+                            color: white;
+                            border: none;
+                            cursor: pointer;
+                        "
+                    >
+                        Save
+                    </button>
+                </div>
+            </main>
         </div>
-    </header>
+        <!-- layout-container 종료 -->
 
-	<!-- 메인 컨텐츠 -->
-	<main>
-		<div style="background-color: rgba(40, 40, 40, 0.7); padding: 30px; border-radius: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
-			<input id="title" placeholder="Title" autocomplete="off" style="all: unset; display: block; font-size: 2rem; font-weight: bold; margin-bottom: 20px; width: 100%;" />
-			<input id="tag" placeholder="Category" autocomplete="off" style="all: unset; display: block; font-size: 1rem; opacity: 0.7; margin-bottom: 20px; width: 100%;" />
-			
-			<!-- Image Upload Section -->
-			<div style="margin-bottom: 20px; padding: 15px; border: 2px dashed rgba(255,255,255,0.3); border-radius: 15px;">
-				<input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
-				<button onclick="document.getElementById('imageInput').click()" style="padding: 8px 16px; border-radius: 20px; background-color: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; margin-right: 10px;">📷 Upload Image</button>
-				<div id="imagePreview" style="margin-top: 15px; display: none;">
-					<img id="previewImg" style="max-width: 200px; max-height: 200px; border-radius: 10px;">
-					<div style="margin-top: 10px;">
-						<button onclick="insertImageToContent()" style="padding: 6px 12px; border-radius: 15px; background-color: green; color: white; border: none; cursor: pointer; margin-right: 10px;">✓ Insert into Text</button>
-						<button onclick="cancelImageUpload()" style="padding: 6px 12px; border-radius: 15px; background-color: crimson; color: white; border: none; cursor: pointer;">✗ Cancel</button>
-					</div>
-				</div>
-				<div id="uploadStatus" style="margin-top: 10px; font-size: 0.9rem; color: #aaa;"></div>
-			</div>
-			
-			<textarea id="content" placeholder="Write the contents with MLmark..." autocomplete="off" style="all: unset; display: block; font-size: 1.2rem; line-height: 1.75; width: 100%; resize: vertical;"></textarea>
-		</div>
-		<div style="text-align: right; margin-top: 20px;">
-			<button onclick="submitPost()" style="padding: 8px 16px; border-radius: 25px; font-weight: bold; background-color: dodgerblue; color: white; border: none; cursor: pointer;">Save</button>
-		</div>
-	</main>
-	</div> <!-- layout-container 종료 -->
+        <footer></footer>
 
-	<footer></footer>
+        <script src="/admin/auth.js"></script>
+        <script>
+            async function submitPost() {
+                const title = document.getElementById("title").value.trim();
+                const tag = document.getElementById("tag").value.trim();
+                const body = document.getElementById("content").value.trim();
 
-    <script src="/admin/auth.js"></script>
-    <script>
-        async function submitPost() {
-            const title = document.getElementById('title').value.trim();
-            const tag = document.getElementById('tag').value.trim();
-            const body = document.getElementById('content').value.trim();
-    
-            if (!title || !tag || !body) {
-                alert('Please fill all fields.');
-                return;
-            }
-    
-            const now = Math.floor(Date.now() / 1000);
-            const token = await sha512(adminPassword + now);
-    
-            const payload = {
-                title,
-                tag,
-                body,
-                token
-            };
-    
-            const res = await fetch('/api/admin/post/new', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-    
-            if (res.ok) {
-                alert('Post saved!');
-                location.href = '/admin/post';
-            } else {
-                alert('Failed to save post.');
-            }
-        }
-    
-        let currentImageUrl = '';
-        let currentImageFilename = '';
-    
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-    
-            if (file.size > 500 * 1024 * 1024) {
-                alert('File size is too large. Please select a file under 500MB.');
-                return;
-            }
-    
-            if (!file.type.startsWith('image/')) {
-                alert('Only image files can be uploaded.');
-                return;
-            }
-    
-            const statusDiv = document.getElementById('uploadStatus');
-            statusDiv.textContent = 'Uploading image...';
-            statusDiv.style.color = '#ffcc00';
-    
-            try {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const base64Data = e.target.result;
-                    
-                    const previewDiv = document.getElementById('imagePreview');
-                    const previewImg = document.getElementById('previewImg');
-                    previewImg.src = base64Data;
-                    previewDiv.style.display = 'block';
-    
-                    const now = Math.floor(Date.now() / 1000);
-                    const token = await sha512(adminPassword + now);
-    
-                    const response = await fetch('/api/admin/image/upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            image: base64Data,
-                            filename: file.name,
-                            token: token
-                        })
-                    });
-    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        currentImageUrl = result.url;
-                        currentImageFilename = result.filename;
-                        statusDiv.textContent = 'Upload complete! Click "Insert into Text" button to insert into content.';
-                        statusDiv.style.color = '#00ff88';
-                    } else {
-                        throw new Error(result.error || 'Upload failed');
-                    }
+                if (!title || !tag || !body) {
+                    alert("Please fill all fields.");
+                    return;
+                }
+
+                const now = Math.floor(Date.now() / 1000);
+                const token = await sha512(adminPassword + now);
+
+                const payload = {
+                    title,
+                    tag,
+                    body,
+                    token,
                 };
-                reader.readAsDataURL(file);
-            } catch (error) {
-                console.error('Upload error:', error);
-                statusDiv.textContent = 'Upload failed: ' + error.message;
-                statusDiv.style.color = '#ff4444';
+
+                const res = await fetch("/api/admin/post/new", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                if (res.ok) {
+                    alert("Post saved!");
+                    location.href = "/admin/post";
+                } else {
+                    alert("Failed to save post.");
+                }
+            }
+
+            let currentImageUrl = "";
+            let currentImageFilename = "";
+
+            async function handleImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (file.size > 500 * 1024 * 1024) {
+                    alert(
+                        "File size is too large. Please select a file under 500MB."
+                    );
+                    return;
+                }
+
+                if (!file.type.startsWith("image/")) {
+                    alert("Only image files can be uploaded.");
+                    return;
+                }
+
+                const statusDiv = document.getElementById("uploadStatus");
+                statusDiv.textContent = "Uploading image...";
+                statusDiv.style.color = "#ffcc00";
+
+                try {
+                    const reader = new FileReader();
+                    reader.onload = async function (e) {
+                        const base64Data = e.target.result;
+
+                        const previewDiv =
+                            document.getElementById("imagePreview");
+                        const previewImg =
+                            document.getElementById("previewImg");
+                        previewImg.src = base64Data;
+                        previewDiv.style.display = "block";
+
+                        const now = Math.floor(Date.now() / 1000);
+                        const token = await sha512(adminPassword + now);
+
+                        const response = await fetch(
+                            "/api/admin/image/upload",
+                            {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    image: base64Data,
+                                    filename: file.name,
+                                    token: token,
+                                }),
+                            }
+                        );
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            currentImageUrl = result.url;
+                            currentImageFilename = result.filename;
+                            statusDiv.textContent =
+                                'Upload complete! Click "Insert into Text" button to insert into content.';
+                            statusDiv.style.color = "#00ff88";
+                        } else {
+                            throw new Error(result.error || "Upload failed");
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                } catch (error) {
+                    console.error("Upload error:", error);
+                    statusDiv.textContent = "Upload failed: " + error.message;
+                    statusDiv.style.color = "#ff4444";
+                    cancelImageUpload();
+                }
+            }
+
+            function insertImageToContent() {
+                if (!currentImageUrl) return;
+
+                const contentTextarea = document.getElementById("content");
+                const cursorPos = contentTextarea.selectionStart;
+                const textBefore = contentTextarea.value.substring(
+                    0,
+                    cursorPos
+                );
+                const textAfter = contentTextarea.value.substring(cursorPos);
+
+                const imageMarkdown = `![Image](${currentImageUrl})`;
+                contentTextarea.value = textBefore + imageMarkdown + textAfter;
+
+                const newCursorPos = cursorPos + imageMarkdown.length;
+                contentTextarea.setSelectionRange(newCursorPos, newCursorPos);
+                contentTextarea.focus();
+
                 cancelImageUpload();
             }
-        }
-    
-        function insertImageToContent() {
-            if (!currentImageUrl) return;
-            
-            const contentTextarea = document.getElementById('content');
-            const cursorPos = contentTextarea.selectionStart;
-            const textBefore = contentTextarea.value.substring(0, cursorPos);
-            const textAfter = contentTextarea.value.substring(cursorPos);
-            
-            const imageMarkdown = `![Image](${currentImageUrl})`;
-            contentTextarea.value = textBefore + imageMarkdown + textAfter;
-            
-            const newCursorPos = cursorPos + imageMarkdown.length;
-            contentTextarea.setSelectionRange(newCursorPos, newCursorPos);
-            contentTextarea.focus();
-            
-            cancelImageUpload();
-        }
-    
-        function cancelImageUpload() {
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('imageInput').value = '';
-            document.getElementById('uploadStatus').textContent = '';
-            currentImageUrl = '';
-            currentImageFilename = '';
-        }
-    
-        document.addEventListener('DOMContentLoaded', () => initializeAdminPage(() => {
-            // 인증 성공 후 별도의 동작이 필요 없으므로 콜백은 비워둡니다.
-        }));
-    </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeAdminPage(() => {
-                // 인증 성공 후 별도의 동작이 필요 없으므로 콜백은 비워둡니다.
-            });
-            
-            const box = document.querySelector('main > div');
-            box.addEventListener('mouseenter', () => {
-                document.body.classList.add('hovering');
-                if (!window.fakeCursor) {
-                    const cursor = document.createElement('div');
-                    cursor.id = 'fake-cursor';
-                    cursor.style.willChange = 'transform';
-                    document.body.appendChild(cursor);
-                    window.fakeCursor = cursor;
-                }
-            });
-            box.addEventListener('mouseleave', () => {
-                document.body.classList.remove('hovering');
-                if (window.fakeCursor) {
-                    window.fakeCursor.remove();
-                    window.fakeCursor = null;
-                }
-            });
-    
-            document.addEventListener('mousemove', function (e) {
-                if (window.fakeCursor && document.body.classList.contains('hovering')) {
-                    window.requestAnimationFrame(() => {
-                        window.fakeCursor.style.left = `${e.clientX}px`;
-                        window.fakeCursor.style.top = `${e.clientY}px`;
-                    });
-                }
-            });
-        });
-    </script>
-</body>
+            function cancelImageUpload() {
+                document.getElementById("imagePreview").style.display = "none";
+                document.getElementById("imageInput").value = "";
+                document.getElementById("uploadStatus").textContent = "";
+                currentImageUrl = "";
+                currentImageFilename = "";
+            }
+
+            document.addEventListener("DOMContentLoaded", () =>
+                initializeAdminPage(() => {
+                    // 인증 성공 후 별도의 동작이 필요 없으므로 콜백은 비워둡니다.
+                })
+            );
+        </script>
+    </body>
 </html>
