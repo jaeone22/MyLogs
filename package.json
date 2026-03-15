@@ -9,7 +9,7 @@
   "author": "jaeone22",
   "description": "Easy Blog Software",
   "dependencies": {
-    "body-parser": "^2.2.0",
+    "body-parser": "^2.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
